@@ -1,71 +1,85 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Galeria zdjęć z Google Drive</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 0; padding: 10px; background: #f5f5f5; }
-  h1 { text-align: center; }
-  #gallery { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-  .thumb { width: 150px; height: 150px; overflow: hidden; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); cursor: pointer; }
-  .thumb img { width: 100%; height: 100%; object-fit: cover; }
-  #lightbox { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; }
-  #lightbox img { max-width: 90%; max-height: 90%; border-radius: 8px; }
-  #lightbox:target { display: flex; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galeria Zdjęć</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f2f2; margin: 0; padding: 0; }
+    header { background: #333; color: #fff; padding: 1rem; text-align: center; }
+    #upload-form, #gallery { max-width: 800px; margin: 2rem auto; padding: 1rem; background: #fff; border-radius: 8px; }
+    #upload-form input[type="file"] { display: block; margin: 1rem 0; }
+    #gallery { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .thumb { width: 150px; height: 150px; overflow: hidden; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); position: relative; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .remove-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 4px; padding: 2px 5px; cursor: pointer; font-size: 12px; }
+  </style>
 </head>
 <body>
-<h1>Galeria zdjęć z Google Drive</h1>
-<div id="gallery"></div>
+  <header>
+    <h1>Galeria Zdjęć</h1>
+  </header>
 
-<div id="lightbox" onclick="location.hash=''">
-  <img id="lightbox-img" src="" alt="Zdjęcie" />
-</div>
+  <section id="upload-form">
+    <h2>Dodaj zdjęcie</h2>
+    <input type="file" id="fileInput" accept="image/*" />
+    <button onclick="uploadFile()">Wyślij</button>
+    <div id="upload-status"></div>
+  </section>
 
-<script>
-const folderId = '1_Cr3GpUruDldRXmYggnJG0sKMh2_V7no';
+  <section id="gallery">
+    <!-- Zdjęcia zostaną tu załadowane -->
+  </section>
 
-// Funkcja do pobrania plików z folderu Google Drive
-async function fetchFiles() {
-  const API_KEY = 'AIzaSyCuCA23G2xXtGy_0DMnX7a-OTwf8yLubCY'; // <-- Tutaj trzeba podstawić klucz API
-  const url = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+mimeType+contains+'image/'&key=${API_KEY}&fields=files(id,name,thumbnailLink,webContentLink)`;
-  
-  const response = await fetch(url);
-  if (!response.ok) {
-    document.getElementById('gallery').innerText = 'Błąd ładowania zdjęć.';
-    return;
-  }
-  const data = await response.json();
-  showGallery(data.files);
-}
+  <script>
+    const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbwo6l8c5l1LantRK2lasqsk3wL4OkHvgE6bMC5ycMIGiPn7oe9dbCv_Zrd0JBXaeR03bQ/exec";
 
-function showGallery(files) {
-  const gallery = document.getElementById('gallery');
-  files.forEach(file => {
-    const div = document.createElement('div');
-    div.className = 'thumb';
-    div.title = file.name;
+    async function uploadFile() {
+      const fileInput = document.getElementById("fileInput");
+      const file = fileInput.files[0];
+      if (!file) return;
 
-    const img = document.createElement('img');
-    // thumbnailLink to małe zdjęcie, a webContentLink to pełny rozmiar
-    img.src = file.thumbnailLink;
-    img.alt = file.name;
+      const formData = new FormData();
+      formData.append("file", file);
 
-    div.onclick = () => {
-      const lightboxImg = document.getElementById('lightbox-img');
-      lightboxImg.src = file.webContentLink;
-      location.hash = 'lightbox';
-    };
+      const status = document.getElementById("upload-status");
+      status.innerText = "Przesyłanie...";
 
-    div.appendChild(img);
-    gallery.appendChild(div);
-  });
-}
+      try {
+        const res = await fetch(API_ENDPOINT, { method: "POST", body: formData });
+        const result = await res.json();
+        if (result.success) {
+          status.innerHTML = `✔ Zdjęcie przesłane! <br><small>Zachowaj ten link do usunięcia: <a href="${result.deleteUrl}" target="_blank">Usuń zdjęcie</a></small>`;
+          loadGallery();
+        } else {
+          status.innerText = "Błąd przesyłania";
+        }
+      } catch (err) {
+        console.error(err);
+        status.innerText = "Błąd sieci.";
+      }
+    }
 
-// Załaduj galerię po załadowaniu strony
-window.onload = fetchFiles;
-</script>
+    async function loadGallery() {
+      const gallery = document.getElementById("gallery");
+      gallery.innerHTML = "Ładowanie...";
 
+      try {
+        const res = await fetch(API_ENDPOINT + "?list=true");
+        const data = await res.json();
+        gallery.innerHTML = "";
+        data.files.forEach(file => {
+          const div = document.createElement("div");
+          div.className = "thumb";
+          div.innerHTML = `<img src="${file.url}" alt="Zdjęcie" />`;
+          gallery.appendChild(div);
+        });
+      } catch (e) {
+        gallery.innerText = "Błąd ładowania galerii.";
+      }
+    }
+
+    window.onload = loadGallery;
+  </script>
 </body>
 </html>
