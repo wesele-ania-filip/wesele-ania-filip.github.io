@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galeria Zdjęć</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f2f2; margin: 0; padding: 0; }
+    header { background: #333; color: #fff; padding: 1rem; text-align: center; }
+    #upload-form, #gallery { max-width: 800px; margin: 2rem auto; padding: 1rem; background: #fff; border-radius: 8px; }
+    #upload-form input[type="file"] { display: block; margin: 1rem 0; }
+    #gallery { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .thumb { width: 150px; height: 150px; overflow: hidden; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); position: relative; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .remove-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 4px; padding: 2px 5px; cursor: pointer; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Galeria Zdjęć</h1>
+  </header>
+
+  <section id="upload-form">
+    <h2>Dodaj zdjęcie</h2>
+    <input type="file" id="fileInput" accept="image/*" />
+    <button onclick="uploadFile()">Wyślij</button>
+    <div id="upload-status"></div>
+  </section>
+
+  <section id="gallery">
+    <!-- Zdjęcia zostaną tu załadowane -->
+  </section>
+
+  <script>
+    const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbwo6l8c5l1LantRK2lasqsk3wL4OkHvgE6bMC5ycMIGiPn7oe9dbCv_Zrd0JBXaeR03bQ/exec";
+
+    async function uploadFile() {
+      const fileInput = document.getElementById("fileInput");
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const status = document.getElementById("upload-status");
+      status.innerText = "Przesyłanie...";
+
+      try {
+        const res = await fetch(API_ENDPOINT, { method: "POST", body: formData });
+        const result = await res.json();
+        if (result.success) {
+          status.innerHTML = `✔ Zdjęcie przesłane! <br><small>Zachowaj ten link do usunięcia: <a href="${result.deleteUrl}" target="_blank">Usuń zdjęcie</a></small>`;
+          loadGallery();
+        } else {
+          status.innerText = "Błąd przesyłania";
+        }
+      } catch (err) {
+        console.error(err);
+        status.innerText = "Błąd sieci.";
+      }
+    }
+
+    async function loadGallery() {
+      const gallery = document.getElementById("gallery");
+      gallery.innerHTML = "Ładowanie...";
+
+      try {
+        const res = await fetch(API_ENDPOINT + "?list=true");
+        const data = await res.json();
+        gallery.innerHTML = "";
+        data.files.forEach(file => {
+          const div = document.createElement("div");
+          div.className = "thumb";
+          div.innerHTML = `<img src="${file.url}" alt="Zdjęcie" />`;
+          gallery.appendChild(div);
+        });
+      } catch (e) {
+        gallery.innerText = "Błąd ładowania galerii.";
+      }
+    }
+
+    window.onload = loadGallery;
+  </script>
+</body>
+</html>

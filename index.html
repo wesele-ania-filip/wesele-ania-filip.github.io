@@ -1,85 +1,258 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Galeria Zdjęć</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f2f2f2; margin: 0; padding: 0; }
-    header { background: #333; color: #fff; padding: 1rem; text-align: center; }
-    #upload-form, #gallery { max-width: 800px; margin: 2rem auto; padding: 1rem; background: #fff; border-radius: 8px; }
-    #upload-form input[type="file"] { display: block; margin: 1rem 0; }
-    #gallery { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-    .thumb { width: 150px; height: 150px; overflow: hidden; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); position: relative; }
-    .thumb img { width: 100%; height: 100%; object-fit: cover; }
-    .remove-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 4px; padding: 2px 5px; cursor: pointer; font-size: 12px; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Galeria zdjęć i filmów z Google Drive</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 10px;
+    background: #f0f0f0;
+  }
+  h1 {
+    text-align: center;
+  }
+  #gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+  .media-item {
+    width: 180px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    cursor: pointer;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .media-item img,
+  .media-item video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  #lightbox {
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  #lightbox.active {
+    display: flex;
+  }
+  #lightbox-content img,
+  #lightbox-content video {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 8px;
+    box-shadow: 0 0 20px black;
+  }
+  #lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 28px;
+    color: white;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* Upload section */
+  #upload-section {
+    margin: 20px auto;
+    max-width: 400px;
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-align: center;
+  }
+  #upload-section input[type="file"] {
+    margin-bottom: 10px;
+  }
+  #uploadStatus {
+    margin-top: 10px;
+    min-height: 20px;
+    font-weight: bold;
+    color: green;
+  }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Galeria Zdjęć</h1>
-  </header>
 
-  <section id="upload-form">
-    <h2>Dodaj zdjęcie</h2>
-    <input type="file" id="fileInput" accept="image/*" />
-    <button onclick="uploadFile()">Wyślij</button>
-    <div id="upload-status"></div>
-  </section>
+<h1>Galeria zdjęć i filmów z Google Drive</h1>
 
-  <section id="gallery">
-    <!-- Zdjęcia zostaną tu załadowane -->
-  </section>
+<div id="upload-section">
+  <h2>Wyślij zdjęcie lub film</h2>
+  <input type="file" id="fileInput" multiple accept="image/*,video/*" />
+  <br />
+  <button id="uploadBtn">Wyślij pliki</button>
+  <div id="uploadStatus"></div>
+</div>
 
-  <script>
-    const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbwo6l8c5l1LantRK2lasqsk3wL4OkHvgE6bMC5ycMIGiPn7oe9dbCv_Zrd0JBXaeR03bQ/exec";
+<div id="gallery">Ładowanie...</div>
 
-    async function uploadFile() {
-      const fileInput = document.getElementById("fileInput");
-      const file = fileInput.files[0];
-      if (!file) return;
+<div id="lightbox">
+  <div id="lightbox-close">&times;</div>
+  <div id="lightbox-content"></div>
+</div>
 
-      const formData = new FormData();
-      formData.append("file", file);
+<script>
+  const folderId = '1_Cr3GpUruDldRXmYggnJG0sKMh2_V7no'; // Twój folder Google Drive
+  const API_KEY = 'AIzaSyCuCA23G2xXtGy_0DMnX7a-OTwf8yLubCY'; // Twój klucz API
+  const scriptUrl = 'https://script.google.com/macros/s/AKfycbzBen6pZMn5bQNdx2jtGrqq56LxSIgKtd0njjCh8Y-yMa8VGZz1synrvpKA5MOFH0gbKA/exec'; // URL Web App Apps Script upload
 
-      const status = document.getElementById("upload-status");
-      status.innerText = "Przesyłanie...";
+  async function fetchFiles() {
+    const gallery = document.getElementById('gallery');
+    gallery.textContent = 'Ładowanie...';
 
-      try {
-        const res = await fetch(API_ENDPOINT, { method: "POST", body: formData });
-        const result = await res.json();
-        if (result.success) {
-          status.innerHTML = `✔ Zdjęcie przesłane! <br><small>Zachowaj ten link do usunięcia: <a href="${result.deleteUrl}" target="_blank">Usuń zdjęcie</a></small>`;
-          loadGallery();
-        } else {
-          status.innerText = "Błąd przesyłania";
+    const query = `'${folderId}' in parents and (mimeType contains 'image/' or mimeType contains 'video/') and trashed = false`;
+    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&key=${API_KEY}&fields=files(id,name,mimeType,thumbnailLink,webContentLink)&orderBy=createdTime desc`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Błąd podczas pobierania plików');
+      const data = await response.json();
+
+      if (!data.files || data.files.length === 0) {
+        gallery.textContent = 'Brak zdjęć i filmów w folderze.';
+        return;
+      }
+
+      gallery.innerHTML = '';
+      data.files.forEach(file => {
+        const div = document.createElement('div');
+        div.className = 'media-item';
+        div.title = file.name;
+
+        if (file.mimeType.startsWith('image/')) {
+          const img = document.createElement('img');
+          img.src = file.thumbnailLink || `https://drive.google.com/uc?export=view&id=${file.id}`;
+          img.alt = file.name;
+          div.appendChild(img);
+
+          div.onclick = () => openLightbox('image', `https://drive.google.com/uc?export=view&id=${file.id}`);
         }
-      } catch (err) {
-        console.error(err);
-        status.innerText = "Błąd sieci.";
-      }
+        else if (file.mimeType.startsWith('video/')) {
+          if (file.thumbnailLink) {
+            const img = document.createElement('img');
+            img.src = file.thumbnailLink;
+            img.alt = file.name;
+            div.appendChild(img);
+          } else {
+            div.style.background = '#000';
+            div.style.color = 'white';
+            div.style.fontWeight = 'bold';
+            div.style.justifyContent = 'center';
+            div.style.textAlign = 'center';
+            div.textContent = 'Film';
+          }
+          div.onclick = () => openLightbox('video', `https://drive.google.com/uc?export=download&id=${file.id}`);
+        }
+
+        gallery.appendChild(div);
+      });
+
+    } catch (error) {
+      gallery.textContent = 'Błąd ładowania galerii: ' + error.message;
+    }
+  }
+
+  function openLightbox(type, src) {
+    const lightbox = document.getElementById('lightbox');
+    const content = document.getElementById('lightbox-content');
+    content.innerHTML = '';
+
+    if (type === 'image') {
+      const img = document.createElement('img');
+      img.src = src;
+      content.appendChild(img);
+    } else if (type === 'video') {
+      const video = document.createElement('video');
+      video.src = src;
+      video.controls = true;
+      video.autoplay = true;
+      content.appendChild(video);
     }
 
-    async function loadGallery() {
-      const gallery = document.getElementById("gallery");
-      gallery.innerHTML = "Ładowanie...";
+    lightbox.classList.add('active');
+  }
 
+  document.getElementById('lightbox-close').addEventListener('click', () => {
+    const lightbox = document.getElementById('lightbox');
+    const content = document.getElementById('lightbox-content');
+    content.innerHTML = '';
+    lightbox.classList.remove('active');
+  });
+
+  document.getElementById('lightbox').addEventListener('click', (e) => {
+    if (e.target.id === 'lightbox') {
+      document.getElementById('lightbox-close').click();
+    }
+  });
+
+  function toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById('uploadBtn').addEventListener('click', async () => {
+    const input = document.getElementById('fileInput');
+    const status = document.getElementById('uploadStatus');
+
+    if (!input.files.length) {
+      alert('Wybierz pliki do wysłania');
+      return;
+    }
+
+    status.style.color = 'black';
+    status.textContent = 'Wysyłanie plików...';
+
+    for (const file of input.files) {
       try {
-        const res = await fetch(API_ENDPOINT + "?list=true");
-        const data = await res.json();
-        gallery.innerHTML = "";
-        data.files.forEach(file => {
-          const div = document.createElement("div");
-          div.className = "thumb";
-          div.innerHTML = `<img src="${file.url}" alt="Zdjęcie" />`;
-          gallery.appendChild(div);
+        const base64 = await toBase64(file);
+        const response = await fetch(scriptUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileBase64: base64, fileName: file.name }),
         });
+
+        if (!response.ok) throw new Error('Błąd sieci');
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error || 'Nieznany błąd');
+
       } catch (e) {
-        gallery.innerText = "Błąd ładowania galerii.";
+        status.style.color = 'red';
+        status.textContent = 'Błąd podczas wysyłania: ' + e.message;
+        return;
       }
     }
 
-    window.onload = loadGallery;
-  </script>
+    status.style.color = 'green';
+    status.textContent = 'Wszystkie pliki wysłane!';
+    input.value = '';
+    fetchFiles();
+  });
+
+  // Załaduj galerię na start
+  fetchFiles();
+
+</script>
+
 </body>
 </html>
