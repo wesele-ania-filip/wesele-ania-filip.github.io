@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Galeria zdjęć i filmów z Google Drive</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 10px;
+    background: #f0f0f0;
+  }
+  h1 {
+    text-align: center;
+  }
+  #gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+  .media-item {
+    width: 180px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    cursor: pointer;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .media-item img,
+  .media-item video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  #lightbox {
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  #lightbox.active {
+    display: flex;
+  }
+  #lightbox-content img,
+  #lightbox-content video {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 8px;
+    box-shadow: 0 0 20px black;
+  }
+  #lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 28px;
+    color: white;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* Upload section */
+  #upload-section {
+    margin: 20px auto;
+    max-width: 400px;
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-align: center;
+  }
+  #upload-section input[type="file"] {
+    margin-bottom: 10px;
+  }
+  #uploadStatus {
+    margin-top: 10px;
+    min-height: 20px;
+    font-weight: bold;
+    color: green;
+  }
+</style>
+</head>
+<body>
+
+<h1>Galeria zdjęć i filmów z Google Drive</h1>
+
+<div id="upload-section">
+  <h2>Wyślij zdjęcie lub film</h2>
+  <input type="file" id="fileInput" multiple accept="image/*,video/*" />
+  <br />
+  <button id="uploadBtn">Wyślij pliki</button>
+  <div id="uploadStatus"></div>
+</div>
+
+<div id="gallery">Ładowanie...</div>
+
+<div id="lightbox">
+  <div id="lightbox-close">&times;</div>
+  <div id="lightbox-content"></div>
+</div>
+
+<script>
+  const folderId = '1_Cr3GpUruDldRXmYggnJG0sKMh2_V7no'; // Twój folder Google Drive
+  const API_KEY = 'AIzaSyCuCA23G2xXtGy_0DMnX7a-OTwf8yLubCY'; // Twój klucz API
+  const scriptUrl = 'https://script.google.com/macros/s/AKfycbzBen6pZMn5bQNdx2jtGrqq56LxSIgKtd0njjCh8Y-yMa8VGZz1synrvpKA5MOFH0gbKA/exec'; // URL Web App Apps Script upload
+
+  async function fetchFiles() {
+    const gallery = document.getElementById('gallery');
+    gallery.textContent = 'Ładowanie...';
+
+    const query = `'${folderId}' in parents and (mimeType contains 'image/' or mimeType contains 'video/') and trashed = false`;
+    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&key=${API_KEY}&fields=files(id,name,mimeType,thumbnailLink,webContentLink)&orderBy=createdTime desc`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Błąd podczas pobierania plików');
+      const data = await response.json();
+
+      if (!data.files || data.files.length === 0) {
+        gallery.textContent = 'Brak zdjęć i filmów w folderze.';
+        return;
+      }
+
+      gallery.innerHTML = '';
+      data.files.forEach(file => {
+        const div = document.createElement('div');
+        div.className = 'media-item';
+        div.title = file.name;
+
+        if (file.mimeType.startsWith('image/')) {
+          const img = document.createElement('img');
+          img.src = file.thumbnailLink || `https://drive.google.com/uc?export=view&id=${file.id}`;
+          img.alt = file.name;
+          div.appendChild(img);
+
+          div.onclick = () => openLightbox('image', `https://drive.google.com/uc?export=view&id=${file.id}`);
+        }
+        else if (file.mimeType.startsWith('video/')) {
+          if (file.thumbnailLink) {
+            const img = document.createElement('img');
+            img.src = file.thumbnailLink;
+            img.alt = file.name;
+            div.appendChild(img);
+          } else {
+            div.style.background = '#000';
+            div.style.color = 'white';
+            div.style.fontWeight = 'bold';
+            div.style.justifyContent = 'center';
+            div.style.textAlign = 'center';
+            div.textContent = 'Film';
+          }
+          div.onclick = () => openLightbox('video', `https://drive.google.com/uc?export=download&id=${file.id}`);
+        }
+
+        gallery.appendChild(div);
+      });
+
+    } catch (error) {
+      gallery.textContent = 'Błąd ładowania galerii: ' + error.message;
+    }
+  }
+
+  function openLightbox(type, src) {
+    const lightbox = document.getElementById('lightbox');
+    const content = document.getElementById('lightbox-content');
+    content.innerHTML = '';
+
+    if (type === 'image') {
+      const img = document.createElement('img');
+      img.src = src;
+      content.appendChild(img);
+    } else if (type === 'video') {
+      const video = document.createElement('video');
+      video.src = src;
+      video.controls = true;
+      video.autoplay = true;
+      content.appendChild(video);
+    }
+
+    lightbox.classList.add('active');
+  }
+
+  document.getElementById('lightbox-close').addEventListener('click', () => {
+    const lightbox = document.getElementById('lightbox');
+    const content = document.getElementById('lightbox-content');
+    content.innerHTML = '';
+    lightbox.classList.remove('active');
+  });
+
+  document.getElementById('lightbox').addEventListener('click', (e) => {
+    if (e.target.id === 'lightbox') {
+      document.getElementById('lightbox-close').click();
+    }
+  });
+
+  function toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById('uploadBtn').addEventListener('click', async () => {
+    const input = document.getElementById('fileInput');
+    const status = document.getElementById('uploadStatus');
+
+    if (!input.files.length) {
+      alert('Wybierz pliki do wysłania');
+      return;
+    }
+
+    status.style.color = 'black';
+    status.textContent = 'Wysyłanie plików...';
+
+    for (const file of input.files) {
+      try {
+        const base64 = await toBase64(file);
+        const response = await fetch(scriptUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileBase64: base64, fileName: file.name }),
+        });
+
+        if (!response.ok) throw new Error('Błąd sieci');
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error || 'Nieznany błąd');
+
+      } catch (e) {
+        status.style.color = 'red';
+        status.textContent = 'Błąd podczas wysyłania: ' + e.message;
+        return;
+      }
+    }
+
+    status.style.color = 'green';
+    status.textContent = 'Wszystkie pliki wysłane!';
+    input.value = '';
+    fetchFiles();
+  });
+
+  // Załaduj galerię na start
+  fetchFiles();
+
+</script>
+
+</body>
+</html>
