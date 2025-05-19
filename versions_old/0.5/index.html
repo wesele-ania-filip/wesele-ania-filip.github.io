@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wesele Ania i Filip</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .gallery {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .gallery-item {
+        max-width: 200px;
+      }
+      #upload-section {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Galeria zdjęć i filmów</h1>
+    <div id="gallery" class="gallery"></div>
+
+    <div id="upload-section">
+      <h2>Wyślij zdjęcie lub film</h2>
+      <input type="file" id="fileInput" multiple accept="image/*,video/*" />
+      <br />
+      <button id="uploadBtn">Wyślij</button>
+      <div id="uploadStatus"></div>
+    </div>
+
+    <script>
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbzBen6pZMn5bQNdx2jtGrqq56LxSIgKtd0njjCh8Y-yMa8VGZz1synrvpKA5MOFH0gbKA/exec";
+
+      async function fetchFiles() {
+        try {
+          const response = await fetch(scriptUrl);
+          const data = await response.json();
+          const gallery = document.getElementById("gallery");
+          data.files.forEach((file) => {
+            const div = document.createElement("div");
+            div.className = "gallery-item";
+            if (file.mimeType.startsWith("image/")) {
+              const img = document.createElement("img");
+              img.src = file.url;
+              img.style.width = "100%";
+              div.appendChild(img);
+            } else if (file.mimeType.startsWith("video/")) {
+              const video = document.createElement("video");
+              video.src = file.url;
+              video.controls = true;
+              video.style.width = "100%";
+              div.appendChild(video);
+            }
+            gallery.appendChild(div);
+          });
+        } catch (error) {
+          console.error("Błąd podczas pobierania plików:", error);
+        }
+      }
+
+      async function toBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = (error) => reject(error);
+        });
+      }
+
+      document.getElementById("uploadBtn").addEventListener("click", async () => {
+        const files = document.getElementById("fileInput").files;
+        const uploadStatus = document.getElementById("uploadStatus");
+        uploadStatus.textContent = "Trwa przesyłanie...";
+
+        for (const file of files) {
+          const base64 = await toBase64(file);
+          const response = await fetch(scriptUrl, {
+            method: "POST",
+            body: JSON.stringify({ fileBase64: base64, fileName: file.name }),
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          const result = await response.json();
+          if (result.success) {
+            uploadStatus.textContent = `Plik ${file.name} przesłany pomyślnie.`;
+          } else {
+            uploadStatus.textContent = `Błąd przesyłania pliku ${file.name}: ${result.error}`;
+          }
+        }
+      });
+
+      window.onload = fetchFiles;
+    </script>
+  </body>
+</html>
