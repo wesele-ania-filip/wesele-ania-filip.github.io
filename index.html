@@ -1,71 +1,7 @@
 <!DOCTYPE html>
-<html lang="pl">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Galeria zdjęć z Google Drive</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 0; padding: 10px; background: #f5f5f5; }
-  h1 { text-align: center; }
-  #gallery { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-  .thumb { width: 150px; height: 150px; overflow: hidden; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); cursor: pointer; }
-  .thumb img { width: 100%; height: 100%; object-fit: cover; }
-  #lightbox { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; }
-  #lightbox img { max-width: 90%; max-height: 90%; border-radius: 8px; }
-  #lightbox:target { display: flex; }
-</style>
-</head>
+<html>
 <body>
-<h1>Galeria zdjęć z Google Drive</h1>
-<div id="gallery"></div>
-
-<div id="lightbox" onclick="location.hash=''">
-  <img id="lightbox-img" src="" alt="Zdjęcie" />
-</div>
-
-<script>
-const folderId = '1_Cr3GpUruDldRXmYggnJG0sKMh2_V7no';
-
-// Funkcja do pobrania plików z folderu Google Drive
-async function fetchFiles() {
-  const API_KEY = 'AIzaSyCuCA23G2xXtGy_0DMnX7a-OTwf8yLubCY'; // <-- Tutaj trzeba podstawić klucz API
-  const url = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+mimeType+contains+'image/'&key=${API_KEY}&fields=files(id,name,thumbnailLink,webContentLink)`;
-  
-  const response = await fetch(url);
-  if (!response.ok) {
-    document.getElementById('gallery').innerText = 'Błąd ładowania zdjęć.';
-    return;
-  }
-  const data = await response.json();
-  showGallery(data.files);
-}
-
-function showGallery(files) {
-  const gallery = document.getElementById('gallery');
-  files.forEach(file => {
-    const div = document.createElement('div');
-    div.className = 'thumb';
-    div.title = file.name;
-
-    const img = document.createElement('img');
-    // thumbnailLink to małe zdjęcie, a webContentLink to pełny rozmiar
-    img.src = file.thumbnailLink;
-    img.alt = file.name;
-
-    div.onclick = () => {
-      const lightboxImg = document.getElementById('lightbox-img');
-      lightboxImg.src = file.webContentLink;
-      location.hash = 'lightbox';
-    };
-
-    div.appendChild(img);
-    gallery.appendChild(div);
-  });
-}
-
-// Załaduj galerię po załadowaniu strony
-window.onload = fetchFiles;
-</script>
-
+<h1>Hello World</h1>
+<p>I'm hosted with GitHub Pages.</p>
 </body>
 </html>
