@@ -1,192 +1,91 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Galeria Miód Malina</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-  <style>
-    body {
-      background-color: #fff9f0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .header {
-      background-color: #d2382b;
-      color: white;
-      padding: 20px 0;
-      margin-bottom: 30px;
-      border-bottom: 5px solid #f8c537;
-    }
-    .upload-area {
-      border: 3px dashed #f8c537;
-      padding: 30px;
-      text-align: center;
-      cursor: pointer;
-      margin-bottom: 30px;
-      border-radius: 10px;
-      background-color: rgba(248, 197, 55, 0.1);
-    }
-    .upload-area:hover {
-      background-color: rgba(248, 197, 55, 0.2);
-    }
-    .gallery-item {
-      margin-bottom: 20px;
-      transition: transform 0.3s;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .gallery-item:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Galeria Miód Malina - Upload</title>
+<script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
 
-  <div class="header text-center">
-    <h1><i class="fas fa-camera-retro"></i> Galeria Miód Malina</h1>
-    <p class="lead">Twoje zdjęcia i filmy w Google Drive</p>
-    <button id="signinBtn" class="btn btn-light mt-2"><i class="fab fa-google"></i> Zaloguj się z Google</button>
-  </div>
+<button id="loginBtn">Zaloguj się z Google</button>
+<br><br>
+<input type="file" id="fileInput" multiple />
+<br><br>
+<div id="status"></div>
 
-  <div class="container">
-    <div class="upload-area" id="uploadArea">
-      <i class="fas fa-cloud-upload-alt file-icon mb-3" style="font-size: 3rem; color: #d2382b;"></i>
-      <h4>Dodaj nowe zdjęcia lub filmy</h4>
-      <p class="text-muted">Kliknij lub przeciągnij pliki tutaj</p>
-      <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display: none;">
-    </div>
+<script>
+const CLIENT_ID = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com';  // <-- tu wklej
+const FOLDER_ID = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk';  // <-- id folderu w Google Drive
 
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="gallery"></div>
-  </div>
+let accessToken = '';
 
-  <script src="https://apis.google.com/js/api.js"></script>
-  <script>
-    const CLIENT_ID = 'TU_WPROWADŹ_SWÓJ_CLIENT_ID.apps.googleusercontent.com';
-    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-    let accessToken = '';
-
-    // Autoryzacja Google
-    function initAuth() {
-      gapi.load('client:auth2', () => {
-        gapi.auth2.init({ client_id: CLIENT_ID }).then(() => {
-          const auth = gapi.auth2.getAuthInstance();
-          document.getElementById('signinBtn').addEventListener('click', () => {
-            auth.signIn().then(() => {
-              accessToken = gapi.auth.getToken().access_token;
-              alert('Zalogowano do Google!');
-            });
-          });
-        });
+function initAuth() {
+  return new Promise((resolve) => {
+    gapi.load('auth2', () => {
+      gapi.auth2.init({ client_id: CLIENT_ID }).then(() => {
+        resolve();
       });
-    }
+    });
+  });
+}
 
-    window.onload = () => {
-      initAuth();
-      setupUploadHandlers();
-    };
+async function signIn() {
+  const auth = gapi.auth2.getAuthInstance();
+  try {
+    const user = await auth.signIn();
+    const token = user.getAuthResponse().access_token;
+    accessToken = token;
+    document.getElementById('status').innerText = 'Zalogowano!';
+  } catch(e) {
+    alert('Błąd logowania');
+  }
+}
 
-    function setupUploadHandlers() {
-      const uploadArea = document.getElementById('uploadArea');
-      const fileInput = document.getElementById('fileInput');
+function uploadFile(file) {
+  if (!accessToken) {
+    alert('Najpierw się zaloguj!');
+    return;
+  }
 
-      uploadArea.addEventListener('click', () => fileInput.click());
-
-      uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.style.backgroundColor = 'rgba(248, 197, 55, 0.3)';
-      });
-
-      uploadArea.addEventListener('dragleave', () => {
-        uploadArea.style.backgroundColor = 'rgba(248, 197, 55, 0.1)';
-      });
-
-      uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.style.backgroundColor = 'rgba(248, 197, 55, 0.1)';
-        if (e.dataTransfer.files.length) {
-          handleFiles(e.dataTransfer.files);
-        }
-      });
-
-      fileInput.addEventListener('change', () => {
-        if (fileInput.files.length) {
-          handleFiles(fileInput.files);
-        }
-      });
-    }
-
-    function handleFiles(files) {
-      if (!accessToken) {
-        alert('Zaloguj się do Google najpierw!');
-        return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64Data = e.target.result;
+    fetch('https://script.google.com/macros/s/AKfycbxUIioa9U4rlyCgD3CcRtROQC2cmv4rLegxvIULzg74ISKRfdBK-bKif0HHa2A45tQc/exec?action=upload&folderId=' + FOLDER_ID, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        filename: file.name,
+        mimeType: file.type,
+        contents: base64Data
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if(data.success) {
+        document.getElementById('status').innerText = `Plik ${file.name} przesłany!`;
+      } else {
+        alert('Błąd uploadu: ' + data.error);
       }
+    })
+    .catch(err => alert('Błąd uploadu'));
+  };
+  reader.readAsDataURL(file);
+}
 
-      [...files].forEach(file => uploadFileToDrive(file));
+window.onload = async () => {
+  await initAuth();
+
+  document.getElementById('loginBtn').onclick = signIn;
+
+  document.getElementById('fileInput').addEventListener('change', (e) => {
+    for (const file of e.target.files) {
+      uploadFile(file);
     }
+  });
+};
+</script>
 
-    function uploadFileToDrive(file) {
-      const metadata = {
-        name: file.name,
-        mimeType: file.type
-      };
-
-      const form = new FormData();
-      form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
-      form.append("file", file);
-
-      fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
-        method: "POST",
-        headers: new Headers({ "Authorization": "Bearer " + accessToken }),
-        body: form
-      })
-      .then(res => res.json())
-      .then(data => {
-        alert(`Plik ${file.name} przesłany!`);
-        showInGallery(file);
-      })
-      .catch(err => {
-        console.error('Błąd:', err);
-        alert('Nie udało się przesłać pliku.');
-      });
-    }
-
-    function showInGallery(file) {
-      const gallery = document.getElementById('gallery');
-      const col = document.createElement('div');
-      col.className = 'col';
-
-      const card = document.createElement('div');
-      card.className = 'card h-100 gallery-item';
-
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        let content = '';
-        if (file.type.startsWith('image/')) {
-          content = `<img src="${e.target.result}" class="card-img-top" style="height: 200px; object-fit: cover;">`;
-        } else if (file.type.startsWith('video/')) {
-          content = `<video controls style="height: 200px; width: 100%; object-fit: cover;">
-                       <source src="${e.target.result}" type="${file.type}">
-                     </video>`;
-        }
-
-        card.innerHTML = `
-          ${content}
-          <div class="card-body">
-            <h5 class="card-title">${file.name}</h5>
-            <p class="card-text text-muted">${file.type}</p>
-          </div>
-        `;
-
-        col.appendChild(card);
-        gallery.appendChild(col);
-      };
-      reader.readAsDataURL(file);
-    }
-  </script>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
