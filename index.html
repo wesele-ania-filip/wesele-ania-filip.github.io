@@ -3,181 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logowanie</title>
-    <script src="https://apis.google.com/js/api.js"></script>
+    <title>Google Drive Galeria</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-        }
-        .container {
-            text-align: center;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        .hidden {
-            display: none;
-        }
-        #fileInput {
-            margin: 20px 0;
-        }
-        button {
-            padding: 10px 20px;
-            margin: 10px;
-            cursor: pointer;
-        }
-        #error {
-            color: red;
-        }
+        .media-container { display: flex; flex-wrap: wrap; gap: 10px; }
+        .media-item { max-width: 300px; }
+        .media-item img, .media-item video { width: 100%; height: auto; }
     </style>
 </head>
 <body>
-    <div id="loginPage" class="container">
-        <h1>Logowanie</h1>
-        <button onclick="signIn()">Zaloguj się z Google</button>
-        <div id="error"></div>
+    <div class="container mt-5">
+        <h1>Galeria zdjęć i filmów</h1>
+        <button id="signInButton" class="btn btn-primary mb-3">Zaloguj się do Google</button>
+        <button id="signOutButton" class="btn btn-secondary mb-3" style="display: none;">Wyloguj się</button>
+        <div class="mb-3">
+            <input type="file" id="fileInput" multiple accept="image/*,video/*" class="form-control">
+            <button id="uploadButton" class="btn btn-success mt-2" disabled>Wyślij pliki</button>
+        </div>
+        <div id="mediaContainer" class="media-container"></div>
     </div>
 
-    <div id="galleryPage" class="container hidden">
-        <h1>Galeria Mód Malina</h1>
-        <p>Zarządzanie zdjęciami i filmami w Google Drive</p>
-        <button onclick="signOut()">Wyloguj</button>
-        <input type="file" id="fileInput" multiple accept="image/*,video/*">
-        <button onclick="uploadFiles()">Prześlij pliki</button>
-        <div id="status"></div>
-    </div>
-
+    <script src="https://apis.google.com/js/api.js"></script>
     <script>
+        const CLIENT_ID = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com'; // Replace with your Google OAuth Client ID
+        const API_KEY = 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4'; // Replace with your Google API Key
+        const FOLDER_ID = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk'; // Replace with your Google Drive folder ID
+        const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+        let tokenClient;
         let accessToken = null;
 
-        // Initialize Google API Client
-        function initGapi() {
-            return new Promise((resolve, reject) => {
-                gapi.load('client', () => {
-                    gapi.client.init({
-                        apiKey: 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4',
-                        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-                    }).then(() => {
-                        console.log('GAPI client initialized');
-                        resolve();
-                    }).catch(error => {
-                        console.error('Error initializing GAPI client:', error);
-                        document.getElementById('error').innerHTML = 'Błąd inicjalizacji API: ' + JSON.stringify(error);
-                        reject(error);
+        function initClient() {
+            gapi.load('client:auth2', () => {
+                gapi.client.init({
+                    apiKey: API_KEY,
+                    discoveryDocs: DISCOVERY_DOCS,
+                }).then(() => {
+                    tokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: CLIENT_ID,
+                        scope: SCOPES,
+                        callback: (tokenResponse) => {
+                            accessToken = tokenResponse.access_token;
+                            document.getElementById('signInButton').style.display = 'none';
+                            document.getElementById('signOutButton').style.display = 'block';
+                            document.getElementById('uploadButton').disabled = false;
+                            listFiles();
+                        },
                     });
                 });
             });
         }
 
-        // Sign in with Google (redirect-based)
-        function signIn() {
-            const clientId = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com';
-            const redirectUri = window.location.origin;
-            const scope = 'https://www.googleapis.com/auth/drive.file';
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}&prompt=select_account`;
-            window.location.href = authUrl;
+        function handleSignIn() {
+            tokenClient.requestAccessToken();
         }
 
-        // Handle redirect callback
-        function handleAuthCallback() {
-            const hash = window.location.hash;
-            if (hash) {
-                const params = new URLSearchParams(hash.substring(1));
-                accessToken = params.get('access_token');
-                if (accessToken) {
-                    initGapi().then(() => {
-                        document.getElementById('loginPage').classList.add('hidden');
-                        document.getElementById('galleryPage').classList.remove('hidden');
-                        document.getElementById('error').innerHTML = '';
-                        // Clean up URL
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                    }).catch(error => {
-                        document.getElementById('error').innerHTML = 'Błąd inicjalizacji: ' + JSON.stringify(error);
-                    });
-                } else {
-                    const error = params.get('error');
-                    if (error) {
-                        document.getElementById('error').innerHTML = 'Błąd logowania: ' + error;
-                    }
-                }
+        function handleSignOut() {
+            if (accessToken) {
+                google.accounts.oauth2.revoke(accessToken);
+                accessToken = null;
+                document.getElementById('signInButton').style.display = 'block';
+                document.getElementById('signOutButton').style.display = 'none';
+                document.getElementById('uploadButton').disabled = true;
+                document.getElementById('mediaContainer').innerHTML = '';
             }
         }
 
-        // Sign out
-        function signOut() {
-            accessToken = null;
-            document.getElementById('loginPage').classList.remove('hidden');
-            document.getElementById('galleryPage').classList.add('hidden');
-            document.getElementById('status').innerHTML = '';
-            document.getElementById('error').innerHTML = '';
-        }
-
-        // Upload files to Google Drive
-        async function uploadFiles() {
-            const fileInput = document.getElementById('fileInput');
-            const files = fileInput.files;
-            const status = document.getElementById('status');
-
-            if (files.length === 0) {
-                status.innerHTML = 'Proszę wybrać pliki do przesłania.';
-                return;
-            }
-
-            if (!accessToken) {
-                status.innerHTML = 'Błąd: Brak tokenu dostępu. Zaloguj się ponownie.';
-                return;
-            }
-
-            status.innerHTML = 'Przesyłanie...';
-            const folderId = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk';
-
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const metadata = {
-                    name: file.name,
-                    parents: [folderId],
-                    mimeType: file.type
-                };
-
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                form.append('file', file);
-
-                try {
-                    const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': 'Bearer ' + accessToken
-                        },
-                        body: form
-                    });
-
-                    if (response.ok) {
-                        status.innerHTML += `<p>Przesłano: ${file.name}</p>`;
-                    } else {
-                        const errorData = await response.json();
-                        status.innerHTML += `<p>Błąd podczas przesyłania ${file.name}: ${errorData.error.message}</p>`;
-                    }
-                } catch (error) {
-                    status.innerHTML += `<p>Błąd: ${error.message}</p>`;
-                }
-            }
-        }
-
-        // Load Google API client and check for auth callback
-        window.onload = function() {
-            gapi.load('client', () => {
-                console.log('GAPI client loaded');
-                handleAuthCallback();
+        function listFiles() {
+            gapi.client.drive.files.list({
+                q: `'${FOLDER_ID}' in parents and (mimeType contains 'image/' or mimeType contains 'video/')`,
+                fields: 'files(id, name, mimeType, webContentLink)',
+            }).then((response) => {
+                const files = response.result.files;
+                const container = document.getElementById('mediaContainer');
+                container.innerHTML = '';
+                files.forEach(file => {
+                    const element = file.mimeType.startsWith('image/')
+                        ? `<img src="${file.webContentLink}" alt="${file.name}" class="media-item">`
+                        : `<video controls src="${file.webContentLink}" class="media-item"></video>`;
+                    container.innerHTML += element;
+                });
             });
-        };
+        }
+
+        function uploadFile(file) {
+            const metadata = {
+                name: file.name,
+                mimeType: file.type,
+                parents: [FOLDER_ID],
+            };
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            form.append('file', file);
+
+            fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: new Headers({ 'Authorization': `Bearer ${accessToken}` }),
+                body: form,
+            }).then(() => {
+                listFiles();
+            }).catch((error) => {
+                console.error('Upload error:', error);
+            });
+        }
+
+        document.getElementById('signInButton').addEventListener('click', handleSignIn);
+        document.getElementById('signOutButton').addEventListener('click', handleSignOut);
+        document.getElementById('uploadButton').addEventListener('click', () => {
+            const files = document.getElementById('fileInput').files;
+            for (let file of files) {
+                uploadFile(file);
+            }
+        });
+
+        initClient();
     </script>
 </body>
 </html>
