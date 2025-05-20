@@ -40,8 +40,9 @@
     <div id="loginPage" class="container">
         <h1>Logowanie</h1>
         <div id="g_id_onload"
-             data-client_id="YOUR_CLIENT_ID.apps.googleusercontent.com"
-             data-callback="handleCredentialResponse">
+             data-client_id="423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com"
+             data-callback="handleCredentialResponse"
+             data-scope="https://www.googleapis.com/auth/drive.file">
         </div>
         <div class="g_id_signin" data-type="standard" data-size="large"></div>
     </div>
@@ -58,7 +59,7 @@
     <script>
         // Initialize Google API Client
         function initGapi() {
-            gapi.load('client', () => {
+            gapi.load('client:auth2', () => {
                 gapi.client.init({
                     apiKey: 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4',
                     discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
@@ -66,6 +67,7 @@
                     console.log('GAPI client initialized');
                 }).catch(error => {
                     console.error('Error initializing GAPI client:', error);
+                    document.getElementById('status').innerHTML = 'Błąd inicjalizacji API: ' + error.message;
                 });
             });
         }
@@ -76,7 +78,14 @@
             if (profile) {
                 document.getElementById('loginPage').classList.add('hidden');
                 document.getElementById('galleryPage').classList.remove('hidden');
-                initGapi();
+                gapi.auth2.getAuthInstance().signIn().then(() => {
+                    initGapi();
+                }).catch(error => {
+                    console.error('Error during sign-in:', error);
+                    document.getElementById('status').innerHTML = 'Błąd logowania: ' + error.message;
+                });
+            } else {
+                document.getElementById('status').innerHTML = 'Błąd: Nie udało się zweryfikować użytkownika.';
             }
         }
 
@@ -97,10 +106,16 @@
 
         // Sign out
         function signOut() {
-            google.accounts.id.disableAutoSelect();
-            document.getElementById('loginPage').classList.remove('hidden');
-            document.getElementById('galleryPage').classList.add('hidden');
-            document.getElementById('status').innerHTML = '';
+            const auth2 = gapi.auth2.getAuthInstance();
+            auth2.signOut().then(() => {
+                google.accounts.id.disableAutoSelect();
+                document.getElementById('loginPage').classList.remove('hidden');
+                document.getElementById('galleryPage').classList.add('hidden');
+                document.getElementById('status').innerHTML = '';
+            }).catch(error => {
+                console.error('Error signing out:', error);
+                document.getElementById('status').innerHTML = 'Błąd wylogowania: ' + error.message;
+            });
         }
 
         // Upload files to Google Drive
@@ -115,7 +130,7 @@
             }
 
             status.innerHTML = 'Przesyłanie...';
-            const folderId = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk'; // Replace with your Google Drive folder ID
+            const folderId = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk';
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
@@ -141,7 +156,8 @@
                     if (response.ok) {
                         status.innerHTML += `<p>Przesłano: ${file.name}</p>`;
                     } else {
-                        status.innerHTML += `<p>Błąd podczas przesyłania ${file.name}: ${response.statusText}</p>`;
+                        const errorData = await response.json();
+                        status.innerHTML += `<p>Błąd podczas przesyłania ${file.name}: ${errorData.error.message}</p>`;
                     }
                 } catch (error) {
                     status.innerHTML += `<p>Błąd: ${error.message}</p>`;
@@ -151,7 +167,7 @@
 
         // Load Google API client library
         window.onload = function() {
-            gapi.load('client', initGapi);
+            gapi.load('client:auth2', initGapi);
         };
     </script>
 </body>
