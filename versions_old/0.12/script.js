@@ -9,7 +9,6 @@ const progressBar = document.querySelector('.progress-bar');
 const progress = document.querySelector('.progress');
 const fullscreenOverlay = document.getElementById('fullscreen-overlay');
 const fullscreenContent = document.getElementById('fullscreen-content');
-const fullscreenLoading = document.getElementById('fullscreen-loading');
 const closeFullscreen = document.getElementById('close-fullscreen');
 const uploadArea = document.querySelector('.upload-area');
 
@@ -21,6 +20,8 @@ function init() {
 }
 
 function setupEventListeners() {
+    fileInput.addEventListener('click', () => fileInput.click());
+    
     fileInput.addEventListener('change', handleFileSelect);
     
     closeFullscreen.addEventListener('click', closeFullscreenHandler);
@@ -53,7 +54,7 @@ function setupEventListeners() {
 
 function closeFullscreenHandler() {
     fullscreenOverlay.style.display = 'none';
-    fullscreenContent.innerHTML = '<div id="fullscreen-loading">Loading...</div>';
+    fullscreenContent.innerHTML = '';
 }
 
 async function loadMediaFromDrive() {
@@ -123,38 +124,24 @@ function displayMediaItems(files) {
 }
 
 function showFullscreen(file) {
-    fullscreenContent.innerHTML = '<div id="fullscreen-loading">Loading...</div>';
-    fullscreenOverlay.style.display = 'flex';
-    fullscreenLoading.style.display = 'block';
+    fullscreenContent.innerHTML = '';
     
     if (file.mimeType.includes('image/')) {
         const img = document.createElement('img');
         img.src = file.url;
         img.alt = file.name;
-        img.onload = () => {
-            fullscreenLoading.style.display = 'none';
-            fullscreenContent.innerHTML = '';
-            fullscreenContent.appendChild(img);
-        };
-        img.onerror = () => {
-            fullscreenLoading.style.display = 'none';
-            fullscreenContent.innerHTML = '<img src="https://via.placeholder.com/800?text=Image+Not+Found" alt="Error">';
-        };
+        img.onerror = () => { img.src = 'https://via.placeholder.com/800?text=Image+Not+Found'; };
+        fullscreenContent.appendChild(img);
     } else if (file.mimeType.includes('video/')) {
         const video = document.createElement('video');
         video.controls = true;
         video.src = file.url;
         video.autoplay = true;
-        video.onloadeddata = () => {
-            fullscreenLoading.style.display = 'none';
-            fullscreenContent.innerHTML = '';
-            fullscreenContent.appendChild(video);
-        };
-        video.onerror = () => {
-            fullscreenLoading.style.display = 'none';
-            fullscreenContent.innerHTML = '<img src="https://via.placeholder.com/800?text=Video+Not+Found" alt="Error">';
-        };
+        video.onerror = () => { video.poster = 'https://via.placeholder.com/800?text=Video+Not+Found'; };
+        fullscreenContent.appendChild(video);
     }
+    
+    fullscreenOverlay.style.display = 'flex';
 }
 
 function handleFileSelect(e) {
