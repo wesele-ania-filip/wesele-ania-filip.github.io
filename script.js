@@ -195,45 +195,22 @@ function handleFileSelect(e) {
 }
 
 // Upload file to Google Drive
-async function uploadFile(file, currentIndex, totalFiles) {
-    const metadata = {
-        name: file.name,
-        mimeType: file.type,
-        parents: [FOLDER_ID]
-    };
-    
+async function uploadFile(file) {
     const formData = new FormData();
-    formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
     formData.append('file', file);
-    
+
     try {
-        const response = await fetch(`${UPLOAD_API}?uploadType=multipart&key=${API_KEY}`, {
+        const response = await fetch('YOUR_WEB_APP_URL', {
             method: 'POST',
-            body: formData,
+            body: formData
         });
-        
-        const data = await response.json();
-        
-        if (data.error) {
-            throw new Error(data.error.message);
-        }
-        
-        // Update progress
-        const progressPercent = Math.round(((currentIndex + 1) / totalFiles) * 100);
-        progress.style.width = `${progressPercent}%`;
-        
-        if (currentIndex === totalFiles - 1) {
-            uploadStatus.textContent = 'Upload complete! Refreshing gallery...';
-            setTimeout(() => {
-                loadMediaFromDrive(); // Refresh gallery
-                progressBar.style.display = 'none';
-                progress.style.width = '0%';
-                fileInput.value = ''; // Reset file input
-            }, 1000);
-        }
+
+        const result = await response.text();
+        console.log(result);
+        uploadStatus.textContent = result;
     } catch (error) {
         console.error('Upload error:', error);
-        uploadStatus.textContent = `Error uploading ${file.name}: ${error.message}`;
+        uploadStatus.textContent = 'Upload failed: ' + error.message;
     }
 }
 
