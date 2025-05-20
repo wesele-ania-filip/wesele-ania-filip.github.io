@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Logowanie</title>
     <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -34,6 +34,9 @@
             margin: 10px;
             cursor: pointer;
         }
+        #error {
+            color: red;
+        }
     </style>
 </head>
 <body>
@@ -45,10 +48,11 @@
              data-scope="https://www.googleapis.com/auth/drive.file">
         </div>
         <div class="g_id_signin" data-type="standard" data-size="large"></div>
+        <div id="error"></div>
     </div>
 
     <div id="galleryPage" class="container hidden">
-        <h1>Galeria Miód Malina</h1>
+        <h1>Galeria Mód Malina</h1>
         <p>Zarządzanie zdjęciami i filmami w Google Drive</p>
         <button onclick="signOut()">Wyloguj</button>
         <input type="file" id="fileInput" multiple accept="image/*,video/*">
@@ -59,15 +63,19 @@
     <script>
         // Initialize Google API Client
         function initGapi() {
-            gapi.load('client:auth2', () => {
-                gapi.client.init({
-                    apiKey: 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4',
-                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-                }).then(() => {
-                    console.log('GAPI client initialized');
-                }).catch(error => {
-                    console.error('Error initializing GAPI client:', error);
-                    document.getElementById('status').innerHTML = 'Błąd inicjalizacji API: ' + error.message;
+            return new Promise((resolve, reject) => {
+                gapi.load('client:auth2', () => {
+                    gapi.client.init({
+                        apiKey: 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4',
+                        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+                    }).then(() => {
+                        console.log('GAPI client initialized');
+                        resolve();
+                    }).catch(error => {
+                        console.error('Error initializing GAPI client:', error);
+                        document.getElementById('error').innerHTML = 'Błąd inicjalizacji API: ' + error.message;
+                        reject(error);
+                    });
                 });
             });
         }
@@ -75,18 +83,28 @@
         // Handle Google Sign-In response
         function handleCredentialResponse(response) {
             const profile = parseJwt(response.credential);
-            if (profile) {
-                document.getElementById('loginPage').classList.add('hidden');
-                document.getElementById('galleryPage').classList.remove('hidden');
-                gapi.auth2.getAuthInstance().signIn().then(() => {
-                    initGapi();
+            if (!profile) {
+                document.getElementById('error').innerHTML = 'Błąd: Nie udało się zweryfikować użytkownika.';
+                return;
+            }
+
+            initGapi().then(() => {
+                const auth2 = gapi.auth2.getAuthInstance();
+                if (!auth2) {
+                    document.getElementById('error').innerHTML = 'Błąd: Auth2 nie jest zainicjalizowany.';
+                    return;
+                }
+                auth2.signIn().then(() => {
+                    document.getElementById('loginPage').classList.add('hidden');
+                    document.getElementById('galleryPage').classList.remove('hidden');
+                    document.getElementById('error').innerHTML = '';
                 }).catch(error => {
                     console.error('Error during sign-in:', error);
-                    document.getElementById('status').innerHTML = 'Błąd logowania: ' + error.message;
+                    document.getElementById('error').innerHTML = 'Błąd logowania: ' + error.message;
                 });
-            } else {
-                document.getElementById('status').innerHTML = 'Błąd: Nie udało się zweryfikować użytkownika.';
-            }
+            }).catch(error => {
+                console.error('GAPI initialization failed:', error);
+            });
         }
 
         // Parse JWT to get user info
@@ -107,15 +125,20 @@
         // Sign out
         function signOut() {
             const auth2 = gapi.auth2.getAuthInstance();
-            auth2.signOut().then(() => {
-                google.accounts.id.disableAutoSelect();
-                document.getElementById('loginPage').classList.remove('hidden');
-                document.getElementById('galleryPage').classList.add('hidden');
-                document.getElementById('status').innerHTML = '';
-            }).catch(error => {
-                console.error('Error signing out:', error);
-                document.getElementById('status').innerHTML = 'Błąd wylogowania: ' + error.message;
-            });
+            if (auth2) {
+                auth2.signOut().then(() => {
+                    google.accounts.id.disableAutoSelect();
+                    document.getElementById('loginPage').classList.remove('hidden');
+                    document.getElementById('galleryPage').classList.add('hidden');
+                    document.getElementById('status').innerHTML = '';
+                    document.getElementById('error').innerHTML = '';
+                }).catch(error => {
+                    console.error('Error signing out:', error);
+                    document.getElementById('error').innerHTML = 'Błąd wylogowania: ' + error.message;
+                });
+            } else {
+                document.getElementById('error').innerHTML = 'Błąd: Auth2 nie jest zainicjalizowany.';
+            }
         }
 
         // Upload files to Google Drive
@@ -167,7 +190,9 @@
 
         // Load Google API client library
         window.onload = function() {
-            gapi.load('client:auth2', initGapi);
+            gapi.load('client:auth2', () => {
+                initGapi();
+            });
         };
     </script>
 </body>
