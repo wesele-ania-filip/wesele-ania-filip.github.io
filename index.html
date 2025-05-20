@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width enums/width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Galeria Google Drive</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://apis.google.com/js/api.js"></script>
@@ -18,9 +18,9 @@
 
     <script>
         // Konfiguracja Google API
-        const CLIENT_ID = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com'; // Wstaw swoje Client ID
-        const API_KEY = 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4'; // Wstaw swój API Key
-        const FOLDER_ID = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk'; // Wstaw ID folderu z Google Drive
+        const CLIENT_ID = 'YOUR_CLIENT_ID_HERE'; // Wstaw swoje Client ID
+        const API_KEY = 'YOUR_API_KEY_HERE'; // Wstaw swój API Key
+        const FOLDER_ID = 'YOUR_FOLDER_ID_HERE'; // Wstaw ID folderu z Google Drive
         const SCOPES = 'https://www.googleapis.com/auth/drive';
 
         let gapiLoaded = false;
@@ -28,33 +28,41 @@
 
         // Ładowanie Google API
         function initGapi() {
+            console.log('Inicjalizacja Google API...');
             gapi.load('client:auth2', () => {
                 gapi.client.init({
                     apiKey: API_KEY,
                     clientId: CLIENT_ID,
                     scope: SCOPES,
                 }).then(() => {
+                    console.log('Google API zainicjalizowane pomyślnie');
                     gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
                     updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
                     gapiLoaded = true;
+                }).catch((error) => {
+                    console.error('Błąd inicjalizacji Google API:', error);
+                    alert('Nie udało się zainicjalizować Google API. Sprawdź konsolę przeglądarki.');
                 });
             });
         }
 
         // Aktualizacja statusu logowania
         function updateSigninStatus(signedIn) {
+            console.log('Status logowania:', signedIn);
             isSignedIn = signedIn;
             const authButton = document.getElementById('authButton');
             const uploadButton = document.getElementById('uploadButton');
             const fileInput = document.getElementById('fileInput');
 
             if (isSignedIn) {
+                console.log('Użytkownik zalogowany, ładuję pliki...');
                 authButton.textContent = 'Wyloguj się';
                 authButton.onclick = handleSignoutClick;
                 uploadButton.classList.remove('hidden');
                 fileInput.classList.remove('hidden');
                 loadFiles();
             } else {
+                console.log('Użytkownik wylogowany');
                 authButton.textContent = 'Zaloguj się do Google';
                 authButton.onclick = handleAuthClick;
                 uploadButton.classList.add('hidden');
@@ -65,23 +73,32 @@
 
         // Logowanie
         function handleAuthClick() {
+            console.log('Próba logowania...');
             gapi.auth2.getAuthInstance().signIn();
         }
 
         // Wylogowanie
         function handleSignoutClick() {
+            console.log('Wylogowywanie...');
             gapi.auth2.getAuthInstance().signOut();
         }
 
         // Pobieranie listy plików
         function loadFiles() {
+            console.log('Pobieranie plików z folderu:', FOLDER_ID);
             gapi.client.drive.files.list({
                 q: `'${FOLDER_ID}' in parents and (mimeType contains 'image/' or mimeType contains 'video/')`,
                 fields: 'files(id, name, mimeType, thumbnailLink, webContentLink)',
             }).then((response) => {
+                console.log('Odpowiedź API:', response.result.files);
                 const files = response.result.files;
                 const gallery = document.getElementById('gallery');
                 gallery.innerHTML = '';
+
+                if (files.length === 0) {
+                    console.log('Brak plików w folderze');
+                    gallery.innerHTML = '<p>Brak zdjęć lub filmów w folderze.</p>';
+                }
 
                 files.forEach((file) => {
                     const isVideo = file.mimeType.includes('video');
@@ -98,6 +115,7 @@
                 });
             }).catch((error) => {
                 console.error('Błąd podczas pobierania plików:', error);
+                alert('Błąd podczas ładowania plików. Sprawdź konsolę przeglądarki.');
             });
         }
 
@@ -109,6 +127,7 @@
                 return;
             }
 
+            console.log('Przesyłanie', files.length, 'plików...');
             Array.from(files).forEach((file) => {
                 const metadata = {
                     name: file.name,
@@ -125,10 +144,12 @@
                     headers: new Headers({ 'Authorization': 'Bearer ' + gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token }),
                     body: form,
                 }).then(() => {
+                    console.log('Plik przesłany:', file.name);
                     loadFiles();
                     document.getElementById('fileInput').value = '';
                 }).catch((error) => {
                     console.error('Błąd podczas przesyłania pliku:', error);
+                    alert('Błąd podczas przesyłania pliku. Sprawdź konsolę przeglądarki.');
                 });
             });
         }
