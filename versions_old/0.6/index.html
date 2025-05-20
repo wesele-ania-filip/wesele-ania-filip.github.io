@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Galeria z Dysku Google</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    .gallery { display: flex; flex-wrap: wrap; gap: 1rem; }
+    .item { width: 200px; }
+    img, video { width: 100%; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Galeria z Dysku Google</h1>
+  <input type="file" id="fileInput" />
+  <button onclick="uploadFile()">Wyślij plik</button>
+  <p id="status"></p>
+  <div class="gallery" id="gallery"></div>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbzBen6pZMn5bQNdx2jtGrqq56LxSIgKtd0njjCh8Y-yMa8VGZz1synrvpKA5MOFH0gbKA/exec";
+
+    async function fetchGallery() {
+      const res = await fetch(`${scriptURL}?action=getFiles`);
+      const files = await res.json();
+      const gallery = document.getElementById("gallery");
+      gallery.innerHTML = '';
+
+      files.forEach(file => {
+        const div = document.createElement("div");
+        div.className = "item";
+
+        if (file.isImage) {
+          div.innerHTML = `<img src="${file.url}" alt="${file.name}" />`;
+        } else if (file.isVideo) {
+          div.innerHTML = `<video controls src="${file.url}"></video>`;
+        } else {
+          div.innerHTML = `<p>Nieobsługiwany typ: ${file.name}</p>`;
+        }
+
+        gallery.appendChild(div);
+      });
+    }
+
+    async function uploadFile() {
+      const fileInput = document.getElementById("fileInput");
+      const file = fileInput.files[0];
+      const status = document.getElementById("status");
+
+      if (!file) {
+        alert("Wybierz plik!");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async function () {
+        const base64 = reader.result;
+
+        const formData = new FormData();
+        formData.append("file", base64);
+        formData.append("name", file.name);
+        formData.append("type", file.type);
+
+        status.textContent = "Wysyłanie...";
+
+        const res = await fetch(scriptURL, {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          status.textContent = "Wysłano!";
+          fetchGallery();
+        } else {
+          status.textContent = "Błąd wysyłania.";
+        }
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    window.onload = fetchGallery;
+  </script>
+</body>
+</html>
