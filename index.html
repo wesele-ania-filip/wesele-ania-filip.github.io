@@ -62,7 +62,7 @@
             return new Promise((resolve, reject) => {
                 gapi.load('client', () => {
                     gapi.client.init({
-                        apiKey: 'AIz...Enx4',
+                        apiKey: 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4',
                         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
                     }).then(() => {
                         console.log('GAPI client initialized');
@@ -76,31 +76,38 @@
             });
         }
 
-        // Sign in with Google
+        // Sign in with Google (redirect-based)
         function signIn() {
-            gapi.load('auth2', () => {
-                gapi.auth2.authorize({
-                    client_id: '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com',
-                    scope: 'https://www.googleapis.com/auth/drive.file',
-                    response_type: 'token',
-                    prompt: 'select_account'
-                }, (response) => {
-                    if (response.error) {
-                        console.error('Sign-in error:', response.error);
-                        document.getElementById('error').innerHTML = 'Błąd logowania: ' + response.error;
-                        return;
-                    }
-                    accessToken = response.access_token;
+            const clientId = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com';
+            const redirectUri = window.location.origin;
+            const scope = 'https://www.googleapis.com/auth/drive.file';
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}&prompt=select_account`;
+            window.location.href = authUrl;
+        }
+
+        // Handle redirect callback
+        function handleAuthCallback() {
+            const hash = window.location.hash;
+            if (hash) {
+                const params = new URLSearchParams(hash.substring(1));
+                accessToken = params.get('access_token');
+                if (accessToken) {
                     initGapi().then(() => {
                         document.getElementById('loginPage').classList.add('hidden');
                         document.getElementById('galleryPage').classList.remove('hidden');
                         document.getElementById('error').innerHTML = '';
+                        // Clean up URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
                     }).catch(error => {
-                        console.error('GAPI initialization failed:', error);
                         document.getElementById('error').innerHTML = 'Błąd inicjalizacji: ' + JSON.stringify(error);
                     });
-                });
-            });
+                } else {
+                    const error = params.get('error');
+                    if (error) {
+                        document.getElementById('error').innerHTML = 'Błąd logowania: ' + error;
+                    }
+                }
+            }
         }
 
         // Sign out
@@ -164,10 +171,11 @@
             }
         }
 
-        // Load Google API client library
+        // Load Google API client and check for auth callback
         window.onload = function() {
             gapi.load('client', () => {
                 console.log('GAPI client loaded');
+                handleAuthCallback();
             });
         };
     </script>
