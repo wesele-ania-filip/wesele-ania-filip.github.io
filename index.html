@@ -1,82 +1,168 @@
 <!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8" />
-  <title>Galeria Miód Malina - Upload</title>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-</head>
-<body>
-  <button id="loginBtn">Zaloguj się z Google</button><br /><br />
-  <input type="file" id="fileInput" multiple /><br /><br />
-  <div id="status"></div>
-
-<script>
-const CLIENT_ID = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com';
-const FOLDER_ID = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk';
-let accessToken = '';
-let tokenClient;
-
-function initializeTokenClient() {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: 'https://www.googleapis.com/auth/drive.file',
-    callback: (tokenResponse) => {
-      accessToken = tokenResponse.access_token;
-      document.getElementById('status').innerText = 'Zalogowano!';
-    },
-  });
-}
-
-function uploadFile(file) {
-  if (!accessToken) {
-    alert('Najpierw się zaloguj!');
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const base64Data = e.target.result;
-
-    fetch('https://script.google.com/macros/s/AKfycbxUIioa9U4rlyCgD3CcRtROQC2cmv4rLegxvIULzg74ISKRfdBK-bKif0HHa2A45tQc/exec?action=upload&folderId=' + FOLDER_ID, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: new URLSearchParams({
-        filename: file.name,
-        mimeType: file.type,
-        contents: base64Data
-      })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if(data.success) {
-        document.getElementById('status').innerText = `Plik ${file.name} przesłany!`;
-      } else {
-        alert('Błąd uploadu: ' + data.error);
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Galeria Google Drive</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f5f5f5;
+        text-align: center;
       }
-    })
-    .catch(() => alert('Błąd uploadu'));
-  };
-  reader.readAsDataURL(file);
-}
+      header {
+        background: #4285f4;
+        color: white;
+        padding: 1rem;
+      }
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        padding: 1rem;
+      }
+      .gallery img, .gallery video {
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      }
+    </style>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+    <header>
+      <h1>Galeria Google Drive</h1>
+      <button id="authorize_button">Zaloguj się</button>
+      <button id="signout_button" style="display:none">Wyloguj</button>
+      <br /><br />
+      <input type="file" id="file_input" style="display:none" accept="image/*,video/*" />
+      <button id="upload_button" style="display:none">Wgraj plik</button>
+    </header>
+    <section class="gallery" id="gallery"></section>
 
-window.onload = () => {
-  initializeTokenClient();
+    <script>
+      const CLIENT_ID = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com';
+      const API_KEY = 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4';
+      const FOLDER_ID = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk';
+      const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
 
-  document.getElementById('loginBtn').onclick = () => {
-    tokenClient.requestAccessToken();
-  };
+      let tokenClient;
+      let gapiInited = false;
+      let gisInited = false;
 
-  document.getElementById('fileInput').addEventListener('change', (e) => {
-    if (!accessToken) {
-      alert('Zaloguj się najpierw');
-      return;
-    }
-    for (const file of e.target.files) {
-      uploadFile(file);
-    }
-  });
-};
-</script>
+      document.getElementById('authorize_button').onclick = handleAuthClick;
+      document.getElementById('signout_button').onclick = handleSignoutClick;
+      document.getElementById('upload_button').onclick = () => document.getElementById('file_input').click();
+      document.getElementById('file_input').addEventListener('change', uploadFile);
 
-</body>
+      function gapiLoaded() {
+        gapi.load('client', initializeGapiClient);
+      }
+
+      async function initializeGapiClient() {
+        await gapi.client.init({ apiKey: API_KEY });
+        gapiInited = true;
+        maybeEnableButtons();
+      }
+
+      function gisLoaded() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: CLIENT_ID,
+          scope: SCOPES,
+          callback: '',
+        });
+        gisInited = true;
+        maybeEnableButtons();
+      }
+
+      function maybeEnableButtons() {
+        if (gapiInited && gisInited) {
+          document.getElementById('authorize_button').style.display = 'inline';
+        }
+      }
+
+      function handleAuthClick() {
+        tokenClient.callback = async (resp) => {
+          if (resp.error) throw resp;
+          document.getElementById('signout_button').style.display = 'inline';
+          document.getElementById('authorize_button').style.display = 'none';
+          document.getElementById('upload_button').style.display = 'inline';
+          await listFiles();
+        };
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+      }
+
+      function handleSignoutClick() {
+        google.accounts.oauth2.revoke(gapi.client.getToken().access_token);
+        gapi.client.setToken('');
+        document.getElementById('authorize_button').style.display = 'inline';
+        document.getElementById('signout_button').style.display = 'none';
+        document.getElementById('upload_button').style.display = 'none';
+        document.getElementById('gallery').innerHTML = '';
+      }
+
+      async function listFiles() {
+        const response = await gapi.client.request({
+          path: 'https://www.googleapis.com/drive/v3/files',
+          params: {
+            q: `'${FOLDER_ID}' in parents and trashed = false`,
+            fields: 'files(id, name, mimeType)',
+          },
+        });
+
+        const gallery = document.getElementById('gallery');
+        gallery.innerHTML = '';
+
+        response.result.files.forEach((file) => {
+          const fileUrl = `https://drive.google.com/uc?export=view&id=${file.id}`;
+          if (file.mimeType.startsWith('image/')) {
+            const img = document.createElement('img');
+            img.src = fileUrl;
+            gallery.appendChild(img);
+          } else if (file.mimeType.startsWith('video/')) {
+            const video = document.createElement('video');
+            video.src = fileUrl;
+            video.controls = true;
+            gallery.appendChild(video);
+          }
+        });
+      }
+
+      async function uploadFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const metadata = {
+          name: file.name,
+          parents: [FOLDER_ID],
+        };
+
+        const accessToken = gapi.client.getToken().access_token;
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', file);
+
+        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+          method: 'POST',
+          headers: new Headers({ Authorization: 'Bearer ' + accessToken }),
+          body: form,
+        });
+
+        if (res.ok) {
+          alert('Plik wgrany!');
+          listFiles();
+        } else {
+          alert('Błąd przy wgrywaniu pliku.');
+        }
+      }
+
+      window.onload = () => {
+        gapiLoaded();
+        gisLoaded();
+      };
+    </script>
+  </body>
 </html>
