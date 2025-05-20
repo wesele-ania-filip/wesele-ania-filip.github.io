@@ -1,509 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Drive Gallery</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-        }
-        
-        body {
-            display: flex;
-            min-height: 100vh;
-            background-color: #f5f5f5;
-        }
-        
-        .sidebar {
-            width: 300px;
-            background-color: #fff;
-            padding: 20px;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .sidebar h2 {
-            margin-bottom: 20px;
-            color: #333;
-        }
-        
-        .upload-area {
-            border: 2px dashed #ccc;
-            border-radius: 5px;
-            padding: 30px;
-            text-align: center;
-            margin-bottom: 20px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        .upload-area:hover {
-            background-color: #f9f9f9;
-        }
-        
-        .upload-area p {
-            margin-bottom: 15px;
-            color: #666;
-        }
-        
-        .upload-area i {
-            font-size: 48px;
-            color: #999;
-            margin-bottom: 10px;
-        }
-        
-        .file-input {
-            display: none;
-        }
-        
-        .upload-btn {
-            background-color: #4285f4;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        
-        .upload-btn:hover {
-            background-color: #3367d6;
-        }
-        
-        .upload-btn:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        
-        .upload-list {
-            margin-top: 20px;
-        }
-        
-        .upload-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            background: #f9f9f9;
-            padding: 8px;
-            border-radius: 4px;
-        }
-        
-        .upload-item .file-name {
-            flex-grow: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .upload-item .file-size {
-            color: #666;
-            font-size: 12px;
-            margin-left: 10px;
-        }
-        
-        .gallery-container {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        
-        .gallery-item {
-            position: relative;
-            overflow: hidden;
-            border-radius: 4px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            height: 0;
-            padding-bottom: 100%;
-            background-color: #eee;
-        }
-        
-        .gallery-item img, .gallery-item video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s;
-        }
-        
-        .gallery-item:hover img, .gallery-item:hover video {
-            transform: scale(1.05);
-        }
-        
-        .gallery-item .file-name {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 8px;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            font-size: 12px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .loading-indicator {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100px;
-        }
-        
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-radius: 50%;
-            border-top: 4px solid #4285f4;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .status-message {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            border-radius: 4px;
-            color: white;
-            font-weight: bold;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .status-message.success {
-            background-color: #4caf50;
-            opacity: 1;
-        }
-        
-        .status-message.error {
-            background-color: #f44336;
-            opacity: 1;
-        }
-        
-        .status-message.info {
-            background-color: #2196F3;
-            opacity: 1;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Google Drive Gallery</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+    }
+
+    aside {
+      width: 300px;
+      background: #f4f4f4;
+      padding: 20px;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    main {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+      background: #fafafa;
+    }
+
+    .media {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .media img, .media video {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .dropzone {
+      border: 2px dashed #aaa;
+      padding: 30px;
+      text-align: center;
+      border-radius: 10px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .dropzone:hover {
+      background: #eee;
+    }
+
+    #status {
+      font-size: 0.9em;
+      color: #333;
+    }
+  </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h2>Upload Media</h2>
-        <div class="upload-area" id="uploadArea">
-            <i>📁</i>
-            <p>Drag & drop files here</p>
-            <p>or</p>
-            <input type="file" id="fileInput" class="file-input" multiple accept="image/*,video/*">
-            <button class="upload-btn" id="selectFilesBtn">Select Files</button>
-        </div>
-        <button class="upload-btn" id="uploadBtn" disabled>Upload to Drive</button>
-        <div class="upload-list" id="uploadList"></div>
-    </div>
-    
-    <div class="gallery-container">
-        <h2>Media Gallery</h2>
-        <div class="gallery" id="gallery">
-            <div class="loading-indicator">
-                <div class="spinner"></div>
-                <span>Loading gallery...</span>
-            </div>
-        </div>
-    </div>
-    
-    <div class="status-message" id="statusMessage"></div>
-    
-    <script>
-        // Configuration - REPLACE WITH YOUR VALUES
-        const CONFIG = {
-            // Your Google Drive API credentials
-            API_KEY: 'AIzaSyCuCA23G2xXtGy_0DMnX7a-OTwf8yLubCY',
-            CLIENT_ID: '812238139877-3ju7hdnpjrtprvu3glb1175nrjrd1r6l.apps.googleusercontent.com',
-            
-            // The folder ID in Google Drive
-            FOLDER_ID: '1_Cr3GpUruDldRXmYggnJG0sKMh2_V7no',
-            
-            // Google Apps Script Web URL (for upload handling)
-            SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzBen6pZMn5bQNdx2jtGrqq56LxSIgKtd0njjCh8Y-yMa8VGZz1synrvpKA5MOFH0gbKA/exec'
-        };
-        
-        // Global variables
-        let filesToUpload = [];
-        let mediaItems = [];
-        
-        // DOM elements
-        const gallery = document.getElementById('gallery');
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        const selectFilesBtn = document.getElementById('selectFilesBtn');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const uploadList = document.getElementById('uploadList');
-        const statusMessage = document.getElementById('statusMessage');
-        
-        // Initialize the application
-        function init() {
-            setupEventListeners();
-            loadGallery();
-        }
-        
-        // Setup all event listeners
-        function setupEventListeners() {
-            // File selection via button
-            selectFilesBtn.addEventListener('click', () => {
-                fileInput.click();
-            });
-            
-            // File input change
-            fileInput.addEventListener('change', handleFileSelect);
-            
-            // Drag and drop events
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.style.backgroundColor = '#f0f0f0';
-            });
-            
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.style.backgroundColor = '';
-            });
-            
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.style.backgroundColor = '';
-                handleFiles(e.dataTransfer.files);
-            });
-            
-            // Upload button
-            uploadBtn.addEventListener('click', uploadFiles);
-        }
-        
-        // Handle file selection from input
-        function handleFileSelect(e) {
-            handleFiles(e.target.files);
-        }
-        
-        // Process selected files
-        function handleFiles(files) {
-            if (files.length === 0) return;
-            
-            // Filter for image and video files
-            const mediaFiles = Array.from(files).filter(file => 
-                file.type.startsWith('image/') || file.type.startsWith('video/')
-            );
-            
-            if (mediaFiles.length === 0) {
-                showStatus('Please select images or videos', 'error');
-                return;
-            }
-            
-            // Add files to the upload list
-            mediaFiles.forEach(file => {
-                // Check if file is already in the list
-                if (filesToUpload.some(f => f.name === file.name && f.size === file.size)) {
-                    return;
-                }
-                
-                filesToUpload.push(file);
-                
-                // Create preview element
-                const item = document.createElement('div');
-                item.className = 'upload-item';
-                
-                const fileName = document.createElement('div');
-                fileName.className = 'file-name';
-                fileName.textContent = file.name;
-                
-                const fileSize = document.createElement('div');
-                fileSize.className = 'file-size';
-                fileSize.textContent = formatFileSize(file.size);
-                
-                item.appendChild(fileName);
-                item.appendChild(fileSize);
-                uploadList.appendChild(item);
-            });
-            
-            // Enable upload button if files are selected
-            if (filesToUpload.length > 0) {
-                uploadBtn.disabled = false;
-            }
-        }
-        
-        // Format file size (bytes to KB/MB)
-        function formatFileSize(bytes) {
-            if (bytes < 1024) return bytes + ' B';
-            else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-            else return (bytes / 1048576).toFixed(1) + ' MB';
-        }
-        
-        // Upload files to Google Drive
-        function uploadFiles() {
-            if (filesToUpload.length === 0) return;
-            
-            uploadBtn.disabled = true;
-            showStatus('Uploading files...', 'info');
-            
-            // Prepare the upload process
-            const formData = new FormData();
-            filesToUpload.forEach(file => {
-                formData.append('files', file);
-            });
-            
-            // Add folder ID to the form data
-            formData.append('folderId', CONFIG.FOLDER_ID);
-            
-            // Send files to Google Apps Script
-            fetch(CONFIG.SCRIPT_URL, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    showStatus('Files uploaded successfully!', 'success');
-                    clearUploadList();
-                    loadGallery(); // Refresh gallery
-                } else {
-                    throw new Error(data.message || 'Upload failed');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showStatus('Upload failed: ' + error.message, 'error');
-                uploadBtn.disabled = false;
-            });
-        }
-        
-        // Clear the upload list after successful upload
-        function clearUploadList() {
-            filesToUpload = [];
-            uploadList.innerHTML = '';
-            uploadBtn.disabled = true;
-        }
-        
-        // Load media items from Google Drive
-        function loadGallery() {
-            gallery.innerHTML = `
-                <div class="loading-indicator">
-                    <div class="spinner"></div>
-                    <span>Loading gallery...</span>
-                </div>
-            `;
-            
-            // Load the Google Drive API
-            gapi.load('client', () => {
-                gapi.client.init({
-                    apiKey: CONFIG.API_KEY,
-                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
-                }).then(() => {
-                    // Search for files in the specified folder
-                    return gapi.client.drive.files.list({
-                        q: `'${CONFIG.FOLDER_ID}' in parents and (mimeType contains 'image/' or mimeType contains 'video/') and trashed = false`,
-                        fields: 'files(id, name, mimeType, thumbnailLink, webContentLink)',
-                        orderBy: 'modifiedTime desc'
-                    });
-                }).then(response => {
-                    mediaItems = response.result.files;
-                    displayGallery(mediaItems);
-                }).catch(error => {
-                    console.error('Error loading gallery:', error);
-                    gallery.innerHTML = `<p>Error loading gallery: ${error.message}</p>`;
-                });
-            });
-        }
-        
-        // Display media items in the gallery
-        function displayGallery(items) {
-            if (items.length === 0) {
-                gallery.innerHTML = '<p>No media items found in this folder.</p>';
-                return;
-            }
-            
-            gallery.innerHTML = '';
-            
-            items.forEach(item => {
-                const galleryItem = document.createElement('div');
-                galleryItem.className = 'gallery-item';
-                
-                // Determine if item is image or video
-                const isImage = item.mimeType.startsWith('image/');
-                
-                if (isImage) {
-                    // For images, use the thumbnail link or create a direct access link
-                    const img = document.createElement('img');
-                    img.src = item.thumbnailLink || 
-                           `https://drive.google.com/uc?export=view&id=${item.id}`;
-                    img.alt = item.name;
-                    img.loading = 'lazy';
-                    galleryItem.appendChild(img);
-                } else {
-                    // For videos, create a thumbnail with play icon
-                    const video = document.createElement('video');
-                    video.src = `https://drive.google.com/uc?export=download&id=${item.id}`;
-                    video.controls = true;
-                    video.preload = 'metadata';
-                    galleryItem.appendChild(video);
-                }
-                
-                // Add file name
-                const fileName = document.createElement('div');
-                fileName.className = 'file-name';
-                fileName.textContent = item.name;
-                galleryItem.appendChild(fileName);
-                
-                // Make item clickable to open in a new tab
-                galleryItem.addEventListener('click', () => {
-                    window.open(`https://drive.google.com/file/d/${item.id}/view`, '_blank');
-                });
-                
-                gallery.appendChild(galleryItem);
-            });
-        }
-        
-        // Show status message
-        function showStatus(message, type) {
-            statusMessage.textContent = message;
-            statusMessage.className = 'status-message ' + type;
-            
-            // Clear message after 5 seconds
-            setTimeout(() => {
-                statusMessage.className = 'status-message';
-            }, 5000);
-        }
-        
-        // Initialize app when page is loaded
-        document.addEventListener('DOMContentLoaded', init);
-    </script>
-    
-    <!-- Load Google API Client Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gapi/1.0.0/client.js"></script>
+
+<aside>
+  <h2>Upload</h2>
+  <input type="file" id="fileInput" multiple>
+  <div class="dropzone" id="dropzone">Drag & drop files here</div>
+  <p id="status"></p>
+</aside>
+
+<main id="gallery">
+  <!-- Media gallery will be populated here -->
+</main>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwpRx3CuD5zSKIJXyRAVC69qQ8ZlT8EBj1S6HBps33qVsScGs0XcE1ds9Zq5pYGqkt37w/exec';
+
+async function fetchGallery() {
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=list`);
+    const files = await res.json();
+
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = '';
+
+    files.forEach(item => {
+      const container = document.createElement('div');
+      container.className = 'media';
+
+      if (item.mimeType.startsWith('image/')) {
+        container.innerHTML = `<img src="${item.url}" alt="${item.name}">`;
+      } else if (item.mimeType.startsWith('video/')) {
+        container.innerHTML = `<video controls><source src="${item.url}" type="${item.mimeType}"></video>`;
+      }
+
+      gallery.appendChild(container);
+    });
+  } catch (err) {
+    document.getElementById('status').innerText = 'Error loading gallery.';
+    console.error(err);
+  }
+}
+
+async function uploadFile(file) {
+  const reader = new FileReader();
+  reader.onload = async function () {
+    const base64Data = reader.result.split(',')[1];
+    const formData = new URLSearchParams();
+    formData.append('file', base64Data);
+    formData.append('filename', file.name);
+    formData.append('mimeType', file.type);
+
+    document.getElementById('status').innerText = `Uploading ${file.name}...`;
+
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: formData
+      });
+      const text = await res.text();
+      document.getElementById('status').innerText = text;
+      fetchGallery(); // Refresh after upload
+    } catch (error) {
+      document.getElementById('status').innerText = 'Upload failed.';
+      console.error(error);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// File input handler
+document.getElementById('fileInput').addEventListener('change', e => {
+  [...e.target.files].forEach(uploadFile);
+});
+
+// Drag & drop handler
+const dropzone = document.getElementById('dropzone');
+dropzone.addEventListener('dragover', e => e.preventDefault());
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  [...e.dataTransfer.files].forEach(uploadFile);
+});
+
+fetchGallery();
+</script>
+
 </body>
 </html>
