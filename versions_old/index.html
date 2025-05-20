@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Google Drive Gallery</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+    }
+
+    aside {
+      width: 300px;
+      background: #f4f4f4;
+      padding: 20px;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    main {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+      background: #fafafa;
+    }
+
+    .media {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .media img, .media video {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .dropzone {
+      border: 2px dashed #aaa;
+      padding: 30px;
+      text-align: center;
+      border-radius: 10px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .dropzone:hover {
+      background: #eee;
+    }
+
+    #status {
+      font-size: 0.9em;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+<aside>
+  <h2>Upload</h2>
+  <input type="file" id="fileInput" multiple>
+  <div class="dropzone" id="dropzone">Drag & drop files here</div>
+  <p id="status"></p>
+</aside>
+
+<main id="gallery">
+  <!-- Media gallery will be populated here -->
+</main>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwC69yQffm1zBiKqCNvG6hoRF-nd-ztFdGszgF-RQ7riZ8Vuv4UogAtWOKYJ5EzbfeEsw/exec';
+
+async function fetchGallery() {
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=list`);
+    const files = await res.json();
+
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = '';
+
+    files.forEach(item => {
+      const container = document.createElement('div');
+      container.className = 'media';
+
+      if (item.mimeType.startsWith('image/')) {
+        container.innerHTML = `<img src="${item.url}" alt="${item.name}">`;
+      } else if (item.mimeType.startsWith('video/')) {
+        container.innerHTML = `<video controls><source src="${item.url}" type="${item.mimeType}"></video>`;
+      }
+
+      gallery.appendChild(container);
+    });
+  } catch (err) {
+    document.getElementById('status').innerText = 'Error loading gallery.';
+    console.error(err);
+  }
+}
+
+async function uploadFile(file) {
+  const reader = new FileReader();
+  reader.onload = async function () {
+    const base64Data = reader.result.split(',')[1];
+    const formData = new URLSearchParams();
+    formData.append('file', base64Data);
+    formData.append('filename', file.name);
+    formData.append('mimeType', file.type);
+
+    document.getElementById('status').innerText = `Uploading ${file.name}...`;
+
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: formData
+      });
+      const text = await res.text();
+      document.getElementById('status').innerText = text;
+      fetchGallery(); // Refresh after upload
+    } catch (error) {
+      document.getElementById('status').innerText = 'Upload failed.';
+      console.error(error);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// File input handler
+document.getElementById('fileInput').addEventListener('change', e => {
+  [...e.target.files].forEach(uploadFile);
+});
+
+// Drag & drop handler
+const dropzone = document.getElementById('dropzone');
+dropzone.addEventListener('dragover', e => e.preventDefault());
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  [...e.dataTransfer.files].forEach(uploadFile);
+});
+
+fetchGallery();
+</script>
+
+</body>
+</html>
