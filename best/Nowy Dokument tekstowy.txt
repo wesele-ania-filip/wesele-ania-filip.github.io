@@ -1,0 +1,74 @@
+// Kod do dołączenia w Google Apps Script
+
+function doGet(e) {
+  if (e.parameter.folderId && e.parameter.action === 'list') {
+    return listFiles(e.parameter.folderId);
+  }
+  return HtmlService.createHtmlOutput('Invalid request');
+}
+
+function doPost(e) {
+  if (e.parameter.folderId && e.parameter.action === 'upload') {
+    return uploadFile(e.parameter.folderId, e.postData.contents, e.parameter.filename, e.parameter.mimeType);
+  }
+  return ContentService.createTextOutput('Invalid request');
+}
+
+function listFiles(folderId) {
+  try {
+    const folder = DriveApp.getFolderById(folderId);
+    const files = folder.getFiles();
+    const result = [];
+    
+    while (files.hasNext()) {
+      const file = files.next();
+      result.push({
+        id: file.getId(),
+        name: file.getName(),
+        url: file.getUrl(),
+        thumbnail: getThumbnailUrl(file),
+        mimeType: file.getMimeType()
+      });
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (e) {
+    return ContentService.createTextOutput(JSON.stringify({error: e.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function getThumbnailUrl(file) {
+  // Dla obrazów
+  if (file.getMimeType().includes('image/')) {
+    return `https://drive.google.com/thumbnail?id=${file.getId()}&sz=w400`;
+  }
+  // Dla filmów - ikona
+  if (file.getMimeType().includes('video/')) {
+    return 'https://img.icons8.com/color/96/000000/video-file.png';
+  }
+  // Domyślna ikona
+  return 'https://img.icons8.com/color/96/000000/google-drive-file.png';
+}
+
+function uploadFile(folderId, fileData, filename, mimeType) {
+  try {
+    const folder = DriveApp.getFolderById(folderId);
+    const decoded = Utilities.base64Decode(fileData.split(',')[1]);
+    const blob = Utilities.newBlob(decoded, mimeType, filename);
+    const file = folder.createFile(blob);
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      id: file.getId(),
+      name: file.getName(),
+      url: file.getUrl()
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (e) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: e.message
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}

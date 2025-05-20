@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galeria Zdjęć - Miód Malina</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body {
+      background-color: #fff9f0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .header {
+      background-color: #d2382b;
+      color: white;
+      padding: 20px 0;
+      margin-bottom: 30px;
+      border-bottom: 5px solid #f8c537;
+    }
+    .gallery-item {
+      margin-bottom: 20px;
+      transition: transform 0.3s;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .gallery-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    .upload-area {
+      border: 3px dashed #f8c537;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 30px;
+      border-radius: 10px;
+      background-color: rgba(248, 197, 55, 0.1);
+      transition: all 0.3s;
+    }
+    .upload-area:hover {
+      background-color: rgba(248, 197, 55, 0.2);
+      border-color: #d2382b;
+    }
+    .btn-primary {
+      background-color: #d2382b;
+      border-color: #d2382b;
+    }
+    .btn-primary:hover {
+      background-color: #b03026;
+      border-color: #b03026;
+    }
+    .btn-outline-primary {
+      color: #d2382b;
+      border-color: #d2382b;
+    }
+    .btn-outline-primary:hover {
+      background-color: #d2382b;
+      border-color: #d2382b;
+    }
+    .file-icon {
+      font-size: 3rem;
+      color: #d2382b;
+    }
+    .footer {
+      margin-top: 50px;
+      padding: 20px 0;
+      background-color: #f8f9fa;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="header text-center">
+    <h1><i class="fas fa-camera-retro"></i> Galeria Miód Malina</h1>
+    <p class="lead">Zarządzanie zdjęciami i filmami w Google Drive</p>
+  </div>
+
+  <div class="container">
+    <div class="upload-area" id="uploadArea">
+      <i class="fas fa-cloud-upload-alt file-icon mb-3"></i>
+      <h4>Dodaj nowe zdjęcia lub filmy</h4>
+      <p class="text-muted">Przeciągnij i upuść pliki tutaj lub kliknij, aby wybrać</p>
+      <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display: none;">
+    </div>
+    
+    <div id="loading" class="text-center my-5" style="display: none;">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Ładowanie...</span>
+      </div>
+      <p class="mt-2">Ładowanie plików...</p>
+    </div>
+    
+    <div class="alert alert-warning" id="noFilesAlert" style="display: none;">
+      <i class="fas fa-info-circle"></i> W folderze nie ma jeszcze żadnych plików.
+    </div>
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="gallery"></div>
+  </div>
+
+  <div class="footer text-center">
+    <p>© 2023 Miód Malina | Wszelkie prawa zastrzeżone</p>
+  </div>
+
+  <script>
+    // Konfiguracja
+    const FOLDER_ID = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyF6UV8cvWH3wiI-ilHDPwqjmBoJlu7dmh0FxCBeAngLTXDQgXkL1AESwvmWhyf2zN3QQ/exec';
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const uploadArea = document.getElementById('uploadArea');
+      const fileInput = document.getElementById('fileInput');
+      const gallery = document.getElementById('gallery');
+      const loading = document.getElementById('loading');
+      const noFilesAlert = document.getElementById('noFilesAlert');
+      
+      // Ładuj pliki przy starcie
+      loadFiles();
+      
+      // Obsługa uploadu
+      uploadArea.addEventListener('click', () => fileInput.click());
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.backgroundColor = 'rgba(248, 197, 55, 0.3)';
+      });
+      uploadArea.addEventListener('dragleave', () => {
+        uploadArea.style.backgroundColor = 'rgba(248, 197, 55, 0.1)';
+      });
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.backgroundColor = 'rgba(248, 197, 55, 0.1)';
+        if (e.dataTransfer.files.length) {
+          handleFiles(e.dataTransfer.files);
+        }
+      });
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) {
+          handleFiles(fileInput.files);
+        }
+      });
+      
+      // Funkcja do ładowania plików
+      function loadFiles() {
+        loading.style.display = 'block';
+        gallery.innerHTML = '';
+        noFilesAlert.style.display = 'none';
+        
+        fetch(`${SCRIPT_URL}?folderId=${FOLDER_ID}&action=list`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.error) {
+              throw new Error(data.error);
+            }
+            
+            if (data.length === 0) {
+              noFilesAlert.style.display = 'block';
+            } else {
+              displayFiles(data);
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('Błąd podczas ładowania plików: ' + error.message);
+          })
+          .finally(() => {
+            loading.style.display = 'none';
+          });
+      }
+      
+      // Wyświetlanie plików
+      function displayFiles(files) {
+        files.forEach(file => {
+          const col = document.createElement('div');
+          col.className = 'col';
+          
+          const card = document.createElement('div');
+          card.className = 'card h-100 gallery-item';
+          
+          let mediaContent = '';
+          if (file.mimeType.includes('image/')) {
+            mediaContent = `
+              <img src="${file.thumbnail}" class="card-img-top" alt="${file.name}" 
+                   style="height: 200px; object-fit: cover; cursor: pointer;"
+                   onclick="openModal('${file.thumbnail.replace('=w400', '=w1200')}', '${file.name}')">
+            `;
+          } else if (file.mimeType.includes('video/')) {
+            mediaContent = `
+              <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                   style="height: 200px; cursor: pointer;"
+                   onclick="window.open('${file.url}', '_blank')">
+                <i class="fas fa-film fa-4x text-secondary"></i>
+                <div class="position-absolute bottom-0 end-0 m-2 bg-dark text-white px-2 rounded">
+                  <i class="fas fa-play"></i> Odtwórz
+                </div>
+              </div>
+            `;
+          }
+          
+          card.innerHTML = `
+            ${mediaContent}
+            <div class="card-body">
+              <h5 class="card-title text-truncate">${file.name}</h5>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">${formatFileType(file.mimeType)}</small>
+                <a href="${file.url}" target="_blank" class="btn btn-sm btn-outline-primary">
+                  <i class="fas fa-external-link-alt"></i>
+                </a>
+              </div>
+            </div>
+          `;
+          
+          col.appendChild(card);
+          gallery.appendChild(col);
+        });
+      }
+      
+      // Obsługa przesyłania plików
+      function handleFiles(files) {
+        loading.style.display = 'block';
+        noFilesAlert.style.display = 'none';
+        
+        const promises = Array.from(files).map(file => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+              const base64 = e.target.result;
+              
+              fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                  folderId: FOLDER_ID,
+                  action: 'upload',
+                  filename: file.name,
+                  mimeType: file.type,
+                  contents: base64
+                })
+              })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  resolve(data);
+                } else {
+                  reject(new Error(data.error || 'Błąd podczas przesyłania pliku'));
+                }
+              })
+              .catch(reject);
+            };
+            
+            reader.onerror = () => reject(new Error('Błąd odczytu pliku'));
+            reader.readAsDataURL(file);
+          });
+        });
+        
+        Promise.all(promises)
+          .then(() => {
+            loadFiles(); // Odśwież galerię po uploadzie
+            alert('Pliki zostały pomyślnie przesłane!');
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('Błąd podczas przesyłania plików: ' + error.message);
+          })
+          .finally(() => {
+            loading.style.display = 'none';
+            fileInput.value = ''; // Wyczyść input plików
+          });
+      }
+    });
+    
+    // Funkcje pomocnicze
+    function formatFileType(mimeType) {
+      if (mimeType.includes('image/jpeg')) return 'JPEG';
+      if (mimeType.includes('image/png')) return 'PNG';
+      if (mimeType.includes('image/gif')) return 'GIF';
+      if (mimeType.includes('video/')) return 'Wideo';
+      return mimeType.split('/')[1]?.toUpperCase() || 'Plik';
+    }
+    
+    function openModal(imageSrc, title) {
+      const modalHtml = `
+        <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">${title}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body text-center">
+                <img src="${imageSrc}" class="img-fluid" style="max-height: 80vh;">
+              </div>
+              <div class="modal-footer">
+                <a href="${imageSrc.replace('=w1200', '=w1200')}" download="${title}" class="btn btn-primary">
+                  <i class="fas fa-download"></i> Pobierz
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      const modalDiv = document.createElement('div');
+      modalDiv.innerHTML = modalHtml;
+      document.body.appendChild(modalDiv);
+      
+      const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+      modal.show();
+      
+      // Usuń modal po zamknięciu
+      document.getElementById('imageModal').addEventListener('hidden.bs.modal', function() {
+        modalDiv.remove();
+      });
+    }
+  </script>
+  
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
