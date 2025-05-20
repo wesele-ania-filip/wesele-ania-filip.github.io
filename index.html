@@ -11,8 +11,8 @@
   <div id="status"></div>
 
 <script>
-const CLIENT_ID = 'TWÓJ_CLIENT_ID.apps.googleusercontent.com';
-const FOLDER_ID = 'TWÓJ_FOLDER_ID';
+const CLIENT_ID = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com';
+const FOLDER_ID = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk';
 let accessToken = '';
 let tokenClient;
 
@@ -37,7 +37,7 @@ function uploadFile(file) {
   reader.onload = function(e) {
     const base64Data = e.target.result;
 
-    fetch('https://script.google.com/macros/s/TWÓJ_DEPLOYED_WEBAPP_ID/exec?action=upload&folderId=' + FOLDER_ID, {
+    fetch('https://script.google.com/macros/s/AKfycbxUIioa9U4rlyCgD3CcRtROQC2cmv4rLegxvIULzg74ISKRfdBK-bKif0HHa2A45tQc/exec?action=upload&folderId=' + FOLDER_ID, {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       body: new URLSearchParams({
