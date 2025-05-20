@@ -45,7 +45,8 @@
         <div id="g_id_onload"
              data-client_id="423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com"
              data-callback="handleCredentialResponse"
-             data-scope="https://www.googleapis.com/auth/drive.file">
+             data-scope="https://www.googleapis.com/auth/drive.file"
+             data-auto_prompt="false">
         </div>
         <div class="g_id_signin" data-type="standard" data-size="large"></div>
         <div id="error"></div>
@@ -65,15 +66,24 @@
         function initGapi() {
             return new Promise((resolve, reject) => {
                 gapi.load('client:auth2', () => {
-                    gapi.client.init({
-                        apiKey: 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4',
-                        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+                    gapi.auth2.init({
+                        client_id: '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com',
+                        scope: 'https://www.googleapis.com/auth/drive.file'
                     }).then(() => {
-                        console.log('GAPI client initialized');
-                        resolve();
+                        gapi.client.init({
+                            apiKey: 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4',
+                            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+                        }).then(() => {
+                            console.log('GAPI client initialized');
+                            resolve();
+                        }).catch(error => {
+                            console.error('Error initializing GAPI client:', error);
+                            document.getElementById('error').innerHTML = 'Błąd inicjalizacji API: ' + error.message;
+                            reject(error);
+                        });
                     }).catch(error => {
-                        console.error('Error initializing GAPI client:', error);
-                        document.getElementById('error').innerHTML = 'Błąd inicjalizacji API: ' + error.message;
+                        console.error('Error initializing auth2:', error);
+                        document.getElementById('error').innerHTML = 'Błąd inicjalizacji auth2: ' + error.message;
                         reject(error);
                     });
                 });
@@ -94,16 +104,12 @@
                     document.getElementById('error').innerHTML = 'Błąd: Auth2 nie jest zainicjalizowany.';
                     return;
                 }
-                auth2.signIn().then(() => {
-                    document.getElementById('loginPage').classList.add('hidden');
-                    document.getElementById('galleryPage').classList.remove('hidden');
-                    document.getElementById('error').innerHTML = '';
-                }).catch(error => {
-                    console.error('Error during sign-in:', error);
-                    document.getElementById('error').innerHTML = 'Błąd logowania: ' + error.message;
-                });
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('galleryPage').classList.remove('hidden');
+                document.getElementById('error').innerHTML = '';
             }).catch(error => {
                 console.error('GAPI initialization failed:', error);
+                document.getElementById('error').innerHTML = 'Błąd inicjalizacji: ' + error.message;
             });
         }
 
@@ -127,11 +133,13 @@
             const auth2 = gapi.auth2.getAuthInstance();
             if (auth2) {
                 auth2.signOut().then(() => {
-                    google.accounts.id.disableAutoSelect();
-                    document.getElementById('loginPage').classList.remove('hidden');
-                    document.getElementById('galleryPage').classList.add('hidden');
-                    document.getElementById('status').innerHTML = '';
-                    document.getElementById('error').innerHTML = '';
+                    google.accounts.id.revoke(parseJwt(gapi.auth.getToken()?.id_token)?.sub, () => {
+                        google.accounts.id.disableAutoSelect();
+                        document.getElementById('loginPage').classList.remove('hidden');
+                        document.getElementById('galleryPage').classList.add('hidden');
+                        document.getElementById('status').innerHTML = '';
+                        document.getElementById('error').innerHTML = '';
+                    });
                 }).catch(error => {
                     console.error('Error signing out:', error);
                     document.getElementById('error').innerHTML = 'Błąd wylogowania: ' + error.message;
