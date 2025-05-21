@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elegancka Galeria Zdjęć</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --light-beige: #d7c5bf;
+            --light-pink: #d099aa;
+            --medium-purple-pink: #b56591;
+            --dark-green: #394827;
+            --muted-blue: #95aeb4;
+            --white: #FFFFFF;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--light-beige);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--light-pink), var(--medium-purple-pink));
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            font-weight: 300;
+            margin-bottom: 1.5rem;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        button {
+            background-color: var(--dark-green);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            background-color: var(--muted-blue);
+        }
+
+        #file_input {
+            display: none;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .gallery-item {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .gallery img, .gallery video {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery img:hover {
+            transform: scale(1.03);
+        }
+
+        .gallery-item p {
+            padding: 1rem;
+            font-size: 0.9rem;
+            color: var(--dark-green);
+            text-align: center;
+            font-weight: 400;
+        }
+
+        .upload-status {
+            background: white;
+            max-width: 500px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--light-pink), var(--medium-purple-pink));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            overflow: auto;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .modal-content img, .modal-content video {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 35px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover {
+            color: var(--light-pink);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--medium-purple-pink);
+            font-size: 0.9rem;
+            background-color: white;
+        }
+
+        @media (max-width: 768px) {
+            .gallery {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            button {
+                width: 80%;
+                margin-bottom: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                padding: 1.5rem 1rem;
+            }
+        }
+    </style>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <header>
+        <h1>Elegancka Galeria Zdjęć</h1>
+        <p class="subtitle">Zachowaj swoje wspomnienia w jednym miejscu</p>
+        <div class="button-group">
+            <button id="authorize_button">Zaloguj się</button>
+            <button id="signout_button" style="display:none">Wyloguj</button>
+            <button id="upload_button" style="display:none">Dodaj zdjęcia</button>
+        </div>
+        <input type="file" id="file_input" accept="image/*,video/*" multiple />
+    </header>
+
+    <div class="upload-status" id="upload_status">
+        <h3 id="status_text">Przesyłanie plików...</h3>
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+    </div>
+
+    <section class="gallery" id="gallery"></section>
+
+    <div id="imageModal" class="modal">
+        <span class="close">&times;</span>
+        <div class="modal-content" id="modalContent"></div>
+    </div>
+
+    <footer>
+        <p>© 2023 Elegancka Galeria Zdjęć</p>
+    </footer>
+
+    <script>
+        const CLIENT_ID = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4';
+        const FOLDER_ID = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
+
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+        const modal = document.getElementById('imageModal');
+        const modalContent = document.getElementById('modalContent');
+        const closeBtn = document.getElementsByClassName('close')[0];
+
+        document.getElementById('authorize_button').onclick = handleAuthClick;
+        document.getElementById('signout_button').onclick = handleSignoutClick;
+        document.getElementById('upload_button').onclick = () => document.getElementById('file_input').click();
+        document.getElementById('file_input').addEventListener('change', uploadFiles);
+        closeBtn.onclick = () => modal.style.display = "none";
+
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
+        }
+
+        async function initializeGapiClient() {
+            await gapi.client.init({ apiKey: API_KEY });
+            gapiInited = true;
+            maybeEnableButtons();
+        }
+
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '',
+            });
+            gisInited = true;
+            maybeEnableButtons();
+        }
+
+        function maybeEnableButtons() {
+            if (gapiInited && gisInited) {
+                document.getElementById('authorize_button').style.display = 'inline-block';
+            }
+        }
+
+        function handleAuthClick() {
+            tokenClient.callback = async (resp) => {
+                if (resp.error) throw resp;
+                document.getElementById('signout_button').style.display = 'inline-block';
+                document.getElementById('authorize_button').style.display = 'none';
+                document.getElementById('upload_button').style.display = 'inline-block';
+                await listFiles();
+            };
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+
+        function handleSignoutClick() {
+            google.accounts.oauth2.revoke(gapi.client.getToken().access_token);
+            gapi.client.setToken('');
+            document.getElementById('authorize_button').style.display = 'inline-block';
+            document.getElementById('signout_button').style.display = 'none';
+            document.getElementById('upload_button').style.display = 'none';
+            document.getElementById('gallery').innerHTML = '';
+        }
+
+        async function listFiles() {
+            try {
+                const response = await gapi.client.request({
+                    path: 'https://www.googleapis.com/drive/v3/files',
+                    params: {
+                        q: `'${FOLDER_ID}' in parents and trashed = false`,
+                        fields: 'files(id, name, mimeType, thumbnailLink, webViewLink)',
+                    },
+                });
+
+                const gallery = document.getElementById('gallery');
+                gallery.innerHTML = '';
+
+                response.result.files.forEach((file) => {
+                    const item = document.createElement('div');
+                    item.className = 'gallery-item';
+                    
+                    const previewUrl = file.thumbnailLink 
+                        ? file.thumbnailLink.replace('=s220', '=s400')
+                        : `https://drive.google.com/thumbnail?id=${file.id}&sz=w400-h300`;
+
+                    if (file.mimeType.startsWith('image/')) {
+                        const img = document.createElement('img');
+                        img.src = previewUrl;
+                        img.alt = file.name;
+                        img.dataset.id = file.id;
+                        img.dataset.webViewLink = file.webViewLink;
+                        img.addEventListener('click', openFullView);
+                        item.appendChild(img);
+                    } else if (file.mimeType.startsWith('video/')) {
+                        const img = document.createElement('img');
+                        img.src = previewUrl;
+                        img.alt = file.name;
+                        img.dataset.id = file.id;
+                        img.dataset.webViewLink = file.webViewLink;
+                        img.addEventListener('click', openFullView);
+                        item.appendChild(img);
+                    }
+                    
+                    const fileName = document.createElement('p');
+                    fileName.textContent = file.name.length > 20 
+                        ? file.name.substring(0, 20) + '...' 
+                        : file.name;
+                    item.appendChild(fileName);
+                    
+                    gallery.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Error listing files:', error);
+                alert('Wystąpił błąd podczas ładowania galerii.');
+            }
+        }
+
+        function openFullView(e) {
+            const fileId = e.target.dataset.id;
+            const webViewLink = e.target.dataset.webViewLink;
+            
+            // Otwórz w nowej karcie
+            window.open(webViewLink, '_blank');
+            
+            // Lub alternatywnie: otwórz w modal (zakomentuj powyższą linię i odkomentuj poniższe)
+            /*
+            modalContent.innerHTML = '';
+            const mediaElement = e.target.tagName === 'IMG' 
+                ? document.createElement('img')
+                : document.createElement('video');
+                
+            mediaElement.src = `https://drive.google.com/uc?export=view&id=${fileId}`;
+            if (e.target.tagName === 'VIDEO') {
+                mediaElement.controls = true;
+                mediaElement.autoplay = true;
+            }
+            modalContent.appendChild(mediaElement);
+            modal.style.display = "block";
+            */
+        }
+
+        async function uploadFiles(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            const statusElement = document.getElementById('upload_status');
+            const statusText = document.getElementById('status_text');
+            const progressBar = document.getElementById('progress');
+            
+            statusElement.style.display = 'block';
+            statusText.textContent = `Przesyłanie 0 z ${files.length} plików...`;
+            progressBar.style.width = '0%';
+
+            const accessToken = gapi.client.getToken().access_token;
+            let successCount = 0;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                try {
+                    statusText.textContent = `Przesyłanie ${i+1} z ${files.length}: ${file.name}`;
+                    progressBar.style.width = `${(i / files.length) * 100}%`;
+
+                    const metadata = {
+                        name: file.name,
+                        parents: [FOLDER_ID],
+                    };
+
+                    const form = new FormData();
+                    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                    form.append('file', file);
+
+                    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+                        method: 'POST',
+                        headers: new Headers({ Authorization: 'Bearer ' + accessToken }),
+                        body: form,
+                    });
+
+                    if (res.ok) {
+                        successCount++;
+                    } else {
+                        console.error(`Błąd przy wgrywaniu pliku ${file.name}:`, await res.text());
+                    }
+                } catch (error) {
+                    console.error(`Błąd przy wgrywaniu pliku ${file.name}:`, error);
+                }
+            }
+
+            progressBar.style.width = '100%';
+            statusText.textContent = `Zakończono! Przesłano ${successCount} z ${files.length} plików.`;
+            
+            setTimeout(() => {
+                statusElement.style.display = 'none';
+                listFiles();
+            }, 2000);
+
+            event.target.value = '';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        window.onload = () => {
+            gapiLoaded();
+            gisLoaded();
+        };
+    </script>
+</body>
+</html>
