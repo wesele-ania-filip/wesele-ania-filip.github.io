@@ -27,6 +27,9 @@
             background-color: var(--light-beige);
             color: #333;
             line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         header {
@@ -93,6 +96,7 @@
             padding: 2rem;
             max-width: 1400px;
             margin: 0 auto;
+            width: 100%;
         }
 
         .gallery-item {
@@ -102,6 +106,7 @@
             box-shadow: var(--shadow);
             transition: all 0.3s ease;
             position: relative;
+            aspect-ratio: 1/1;
         }
 
         .gallery-item:hover {
@@ -111,7 +116,7 @@
 
         .gallery img, .gallery video {
             width: 100%;
-            height: 200px;
+            height: 100%;
             object-fit: cover;
             display: block;
             cursor: pointer;
@@ -120,14 +125,6 @@
 
         .gallery img:hover {
             transform: scale(1.03);
-        }
-
-        .gallery-item p {
-            padding: 1rem;
-            font-size: 0.9rem;
-            color: var(--dark-green);
-            text-align: center;
-            font-weight: 400;
         }
 
         .upload-status {
@@ -210,10 +207,42 @@
             color: var(--medium-purple-pink);
             font-size: 0.9rem;
             background-color: white;
+            margin-top: auto;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .footer-links a {
+            color: var(--medium-purple-pink);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--light-pink);
+            text-decoration: underline;
         }
 
         .auth-section {
             margin-top: 1rem;
+        }
+
+        .drive-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: var(--dark-green);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .drive-link:hover {
+            color: var(--medium-purple-pink);
         }
 
         @media (max-width: 768px) {
@@ -235,6 +264,11 @@
             button {
                 width: 80%;
                 margin-bottom: 0.5rem;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 0.5rem;
             }
         }
 
@@ -280,6 +314,11 @@
     </div>
 
     <footer>
+        <a href="https://drive.google.com/drive/folders/1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk" class="drive-link" target="_blank">Otwórz galerię w Google Drive</a>
+        <div class="footer-links">
+            <a href="#">Polityka prywatności</a>
+            <a href="#">Warunki korzystania</a>
+        </div>
         <p>© 2023 Elegancka Galeria Zdjęć</p>
     </footer>
 
@@ -313,7 +352,6 @@
             });
             gapiInited = true;
             maybeEnableButtons();
-            // Ładuj galerię od razu po zainicjowaniu API
             loadPublicGallery();
         }
 
@@ -333,7 +371,6 @@
             }
         }
 
-        // Funkcja do ładowania galerii bez logowania
         async function loadPublicGallery() {
             try {
                 const response = await gapi.client.drive.files.list({
@@ -362,17 +399,10 @@
                         item.appendChild(img);
                     }
                     
-                    const fileName = document.createElement('p');
-                    fileName.textContent = file.name.length > 20 
-                        ? file.name.substring(0, 20) + '...' 
-                        : file.name;
-                    item.appendChild(fileName);
-                    
                     gallery.appendChild(item);
                 });
             } catch (error) {
                 console.error('Error loading public gallery:', error);
-                // Można dodać komunikat o błędzie, ale nie blokujemy wyświetlania strony
             }
         }
 
@@ -381,7 +411,6 @@
                 if (resp.error) throw resp;
                 document.getElementById('authorize_button').style.display = 'none';
                 document.getElementById('upload_controls').style.display = 'block';
-                // Po zalogowaniu odśwież galerię z pełnymi uprawnieniami
                 await listFiles();
             };
             tokenClient.requestAccessToken({ prompt: 'consent' });
@@ -392,11 +421,9 @@
             gapi.client.setToken('');
             document.getElementById('authorize_button').style.display = 'inline-block';
             document.getElementById('upload_controls').style.display = 'none';
-            // Po wylogowaniu wróć do publicznej galerii
             loadPublicGallery();
         }
 
-        // Funkcja do ładowania galerii z pełnymi uprawnieniami (po zalogowaniu)
         async function listFiles() {
             try {
                 const response = await gapi.client.drive.files.list({
@@ -424,12 +451,6 @@
                         img.addEventListener('click', openFullView);
                         item.appendChild(img);
                     }
-                    
-                    const fileName = document.createElement('p');
-                    fileName.textContent = file.name.length > 20 
-                        ? file.name.substring(0, 20) + '...' 
-                        : file.name;
-                    item.appendChild(fileName);
                     
                     gallery.appendChild(item);
                 });
