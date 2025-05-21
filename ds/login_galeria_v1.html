@@ -2,7 +2,6 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Galeria Google Drive</title>
     <style>
       body {
@@ -30,10 +29,6 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        transition: transform 0.2s;
-      }
-      .gallery-item:hover {
-        transform: scale(1.02);
       }
       .gallery img, .gallery video {
         width: 100%;
@@ -44,26 +39,6 @@
         margin: 0.5rem;
         font-size: 0.9rem;
         color: #333;
-        word-break: break-word;
-      }
-
-      /* Style dla telefonów */
-      @media (max-width: 600px) {
-        .gallery {
-          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-          gap: 0.5rem;
-          padding: 0.5rem;
-        }
-        .gallery img, .gallery video {
-          height: 150px;
-        }
-        header {
-          padding: 0.8rem;
-        }
-        button {
-          padding: 0.5rem;
-          font-size: 0.9rem;
-        }
       }
     </style>
     <script src="https://apis.google.com/js/api.js"></script>
@@ -158,9 +133,10 @@
             const item = document.createElement('div');
             item.className = 'gallery-item';
             
+            // Używamy thumbnailLink jeśli dostępny, w przeciwnym razie używamy standardowego podglądu
             const previewUrl = file.thumbnailLink 
-              ? file.thumbnailLink.replace('=s220', '=s400')
-              : `https://drive.google.com/thumbnail?id=${file.id}&sz=w400-h300`;
+              ? file.thumbnailLink.replace('=s220', '=s400') // Zwiększamy rozmiar miniatury
+              : `https://drive.google.com/thumbnail?id=${file.id}&sz=w400-h300`; // Alternatywny sposób na miniaturę
 
             if (file.mimeType.startsWith('image/')) {
               const img = document.createElement('img');
@@ -168,14 +144,25 @@
               img.alt = file.name;
               item.appendChild(img);
             } else if (file.mimeType.startsWith('video/')) {
+              // Dla filmów używamy miniaturki zamiast odtwarzacza w galerii
               const img = document.createElement('img');
               img.src = previewUrl;
               img.alt = file.name;
               item.appendChild(img);
               
-              // Usunięto przycisk play
+              // Dodajemy ikonę odtwarzania
+              const playIcon = document.createElement('div');
+              playIcon.innerHTML = '▶';
+              playIcon.style.position = 'absolute';
+              playIcon.style.top = '50%';
+              playIcon.style.left = '50%';
+              playIcon.style.transform = 'translate(-50%, -50%)';
+              playIcon.style.fontSize = '3rem';
+              playIcon.style.color = 'white';
+              playIcon.style.textShadow = '0 0 10px rgba(0,0,0,0.5)';
+              item.appendChild(playIcon);
+              
               // Po kliknięciu otwieramy pełny film
-              item.style.cursor = 'pointer';
               item.onclick = () => {
                 window.open(`https://drive.google.com/file/d/${file.id}/view`, '_blank');
               };
@@ -226,6 +213,7 @@
           console.error('Upload error:', error);
           alert('Błąd przy wgrywaniu pliku: ' + error.message);
         } finally {
+          // Reset input file
           event.target.value = '';
         }
       }
