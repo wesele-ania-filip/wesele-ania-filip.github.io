@@ -1,168 +1,234 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Galeria Google Drive</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        margin: 0;
-        padding: 0;
-        background: #f5f5f5;
-        text-align: center;
-      }
-      header {
-        background: #4285f4;
-        color: white;
-        padding: 1rem;
-      }
-      .gallery {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 1rem;
-        padding: 1rem;
-      }
-      .gallery img, .gallery video {
-        width: 100%;
-        height: auto;
-        border-radius: 10px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      }
-    </style>
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-  </head>
-  <body>
-    <header>
-      <h1>Galeria Google Drive</h1>
-      <button id="authorize_button">Zaloguj się</button>
-      <button id="signout_button" style="display:none">Wyloguj</button>
-      <br /><br />
-      <input type="file" id="file_input" style="display:none" accept="image/*,video/*" />
-      <button id="upload_button" style="display:none">Wgraj plik</button>
-    </header>
-    <section class="gallery" id="gallery"></section>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galeria Google Drive</title>
+  <!-- Bootstrap CSS for responsive gallery layout -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    .gallery-img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .gallery-item {
+      transition: transform 0.2s;
+    }
+    .gallery-item:hover {
+      transform: scale(1.05);
+    }
+    .btn-container {
+      margin-bottom: 20px;
+    }
+    #errorMsg {
+      display: none;
+      color: red;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="text-center mb-4">Galeria Google Drive</h1>
+    
+    <!-- Login/Logout Buttons -->
+    <div class="btn-container text-center">
+      <button id="loginBtn" class="btn btn-primary me-2" onclick="handleAuthClick()">Zaloguj się</button>
+      <button id="logoutBtn" class="btn btn-secondary" onclick="handleSignoutClick()" style="display: none;">Wyloguj</button>
+      <button id="uploadBtn" class="btn btn-success" onclick="uploadFile()" style="display: none;">Wgraj plik</button>
+    </div>
 
-    <script>
-      const CLIENT_ID = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com';
-      const API_KEY = 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4';
-      const FOLDER_ID = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk';
-      const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
+    <!-- Error Message -->
+    <p id="errorMsg"></p>
 
-      let tokenClient;
-      let gapiInited = false;
-      let gisInited = false;
+    <!-- Gallery Display -->
+    <div id="gallery" class="row"></div>
+  </div>
 
-      document.getElementById('authorize_button').onclick = handleAuthClick;
-      document.getElementById('signout_button').onclick = handleSignoutClick;
-      document.getElementById('upload_button').onclick = () => document.getElementById('file_input').click();
-      document.getElementById('file_input').addEventListener('change', uploadFile);
+  <!-- Google API and Bootstrap JS -->
+  <script src="https://apis.google.com/js/api.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Google Drive API credentials (replace with your actual values)
+    const API_KEY = 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4'; // Replace with your Google API key
+    const FOLDER_ID = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk'; // Replace with your Google Drive folder ID
+    const CLIENT_ID = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com'; // Replace with your OAuth 2.0 Client ID
+    const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
-      function gapiLoaded() {
-        gapi.load('client', initializeGapiClient);
+    // Global flag to track API initialization
+    let isApiInitialized = false;
+
+    // Load Google API client
+    function initClient() {
+      if (!gapi) {
+        showError('Błąd: Biblioteka Google API nie załadowana.');
+        return;
       }
-
-      async function initializeGapiClient() {
-        await gapi.client.init({ apiKey: API_KEY });
-        gapiInited = true;
-        maybeEnableButtons();
-      }
-
-      function gisLoaded() {
-        tokenClient = google.accounts.oauth2.initTokenClient({
-          client_id: CLIENT_ID,
-          scope: SCOPES,
-          callback: '',
+      gapi.load('client:auth2', () => {
+        gapi.client.init({
+          apiKey: API_KEY,
+          clientId: CLIENT_ID,
+          discoveryDocs: DISCOVERY_DOCS,
+          scope: SCOPES
+        }).then(() => {
+          isApiInitialized = true;
+          // Check login status
+          const authInstance = gapi.auth2.getAuthInstance();
+          authInstance.isSignedIn.listen(updateSigninStatus);
+          updateSigninStatus(authInstance.isSignedIn.get());
+          // Load gallery without requiring login
+          loadGallery();
+        }).catch(error => {
+          console.error('Error initializing Google API client:', error);
+          showError('Błąd inicjalizacji API Google. Sprawdź klucze API i ustawienia.');
         });
-        gisInited = true;
-        maybeEnableButtons();
+      });
+    }
+
+    // Show error message
+    function showError(message) {
+      const errorMsg = document.getElementById('errorMsg');
+      errorMsg.textContent = message;
+      errorMsg.style.display = 'block';
+    }
+
+    // Update UI based on login status
+    function updateSigninStatus(isSignedIn) {
+      if (isSignedIn) {
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'inline-block';
+        document.getElementById('uploadBtn').style.display = 'inline-block';
+      } else {
+        document.getElementById('loginBtn').style.display = 'inline-block';
+        document.getElementById('logoutBtn').style.display = 'none';
+        document.getElementById('uploadBtn').style.display = 'none';
       }
+    }
 
-      function maybeEnableButtons() {
-        if (gapiInited && gisInited) {
-          document.getElementById('authorize_button').style.display = 'inline';
-        }
+    // Handle login
+    function handleAuthClick() {
+      if (!isApiInitialized || !gapi.auth2.getAuthInstance()) {
+        showError('API Google nie jest gotowe. Spróbuj ponownie za chwilę.');
+        return;
       }
+      gapi.auth2.getAuthInstance().signIn().catch(error => {
+        console.error('Login error:', error);
+        showError('Błąd podczas logowania. Sprawdź połączenie lub ustawienia API.');
+      });
+    }
 
-      function handleAuthClick() {
-        tokenClient.callback = async (resp) => {
-          if (resp.error) throw resp;
-          document.getElementById('signout_button').style.display = 'inline';
-          document.getElementById('authorize_button').style.display = 'none';
-          document.getElementById('upload_button').style.display = 'inline';
-          await listFiles();
-        };
-        tokenClient.requestAccessToken({ prompt: 'consent' });
+    // Handle logout
+    function handleSignoutClick() {
+      if (!isApiInitialized || !gapi.auth2.getAuthInstance()) {
+        showError('API Google nie jest gotowe.');
+        return;
       }
+      gapi.auth2.getAuthInstance().signOut();
+    }
 
-      function handleSignoutClick() {
-        google.accounts.oauth2.revoke(gapi.client.getToken().access_token);
-        gapi.client.setToken('');
-        document.getElementById('authorize_button').style.display = 'inline';
-        document.getElementById('signout_button').style.display = 'none';
-        document.getElementById('upload_button').style.display = 'none';
-        document.getElementById('gallery').innerHTML = '';
+    // Load gallery images from Google Drive (public access with API key)
+    function loadGallery() {
+      if (!isApiInitialized) {
+        showError('API Google nie jest gotowe. Spróbuj ponownie za chwilę.');
+        return;
       }
-
-      async function listFiles() {
-        const response = await gapi.client.request({
-          path: 'https://www.googleapis.com/drive/v3/files',
-          params: {
-            q: `'${FOLDER_ID}' in parents and trashed = false`,
-            fields: 'files(id, name, mimeType)',
-          },
-        });
-
+      gapi.client.drive.files.list({
+        q: `'${FOLDER_ID}' in parents and mimeType contains 'image/'`,
+        fields: 'files(id, name, thumbnailLink, webViewLink)',
+        key: API_KEY
+      }).then(response => {
+        const files = response.result.files;
         const gallery = document.getElementById('gallery');
-        gallery.innerHTML = '';
-
-        response.result.files.forEach((file) => {
-          const fileUrl = `https://drive.google.com/uc?export=view&id=${file.id}`;
-          if (file.mimeType.startsWith('image/')) {
+        gallery.innerHTML = ''; // Clear existing content
+        if (files && files.length > 0) {
+          files.forEach(file => {
+            // Create gallery item with thumbnail
+            const col = document.createElement('div');
+            col.className = 'col-md-4 col-sm-6 mb-4 gallery-item';
             const img = document.createElement('img');
-            img.src = fileUrl;
-            gallery.appendChild(img);
-          } else if (file.mimeType.startsWith('video/')) {
-            const video = document.createElement('video');
-            video.src = fileUrl;
-            video.controls = true;
-            gallery.appendChild(video);
-          }
-        });
-      }
-
-      async function uploadFile(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const metadata = {
-          name: file.name,
-          parents: [FOLDER_ID],
-        };
-
-        const accessToken = gapi.client.getToken().access_token;
-        const form = new FormData();
-        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-        form.append('file', file);
-
-        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
-          method: 'POST',
-          headers: new Headers({ Authorization: 'Bearer ' + accessToken }),
-          body: form,
-        });
-
-        if (res.ok) {
-          alert('Plik wgrany!');
-          listFiles();
+            // Use thumbnailLink or fallback to webViewLink
+            img.src = file.thumbnailLink ? file.thumbnailLink.replace(/=s\d+/, '=s220') : file.webViewLink;
+            img.alt = file.name;
+            img.className = 'gallery-img';
+            img.onerror = () => { img.src = 'https://via.placeholder.com/220?text=Brak+miniatury'; }; // Fallback image
+            img.onclick = () => window.open(file.webViewLink, '_blank');
+            col.appendChild(img);
+            gallery.appendChild(col);
+          });
         } else {
-          alert('Błąd przy wgrywaniu pliku.');
+          gallery.innerHTML = '<p class="text-center">Brak zdjęć w galerii.</p>';
         }
-      }
+      }).catch(error => {
+        console.error('Error loading gallery:', error);
+        showError('Błąd podczas ładowania galerii. Sprawdź ID folderu lub uprawnienia.');
+      });
+    }
 
-      window.onload = () => {
-        gapiLoaded();
-        gisLoaded();
+    // File upload (only for logged-in users)
+    function uploadFile() {
+      if (!isApiInitialized || !gapi.auth2.getAuthInstance().isSignedIn.get()) {
+        showError('Zaloguj się, aby wgrać plik.');
+        return;
+      }
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = () => {
+        const file = input.files[0];
+        if (file) {
+          const formData = new FormData();
+          formData.append('file', file);
+          const metadata = {
+            name: file.name,
+            mimeType: file.type,
+            parents: [FOLDER_ID]
+          };
+          gapi.client.request({
+            path: '/upload/drive/v3/files',
+            method: 'POST',
+            params: { uploadType: 'multipart' },
+            headers: {
+              'Content-Type': 'multipart/related; boundary="foo_bar_baz"'
+            },
+            body: `--foo_bar_baz
+Content-Type: application/json; charset=UTF-8
+
+${JSON.stringify(metadata)}
+
+--foo_bar_baz
+Content-Type: ${file.type}
+
+${file}
+
+--foo_bar_baz--`
+          }).then(() => {
+            alert('Plik wgrany pomyślnie!');
+            loadGallery(); // Refresh gallery
+          }).catch(error => {
+            console.error('Error uploading file:', error);
+            showError('Błąd podczas wgrywania pliku.');
+          });
+        }
       };
-    </script>
-  </body>
+      input.click();
+    }
+
+    // Initialize the client on page load
+    window.onload = () => {
+      if (typeof gapi === 'undefined') {
+        showError('Błąd: Biblioteka Google API nie załadowana. Sprawdź połączenie z internetem.');
+        return;
+      }
+      initClient();
+    };
+  </script>
+</body>
 </html>

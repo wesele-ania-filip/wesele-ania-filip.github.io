@@ -1,0 +1,2 @@
+naprawić wyświetlanie zdjęć - galeria
+zatwierdzić oauth
