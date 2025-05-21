@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Galeria Google Drive</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f5f5f5;
+        text-align: center;
+      }
+      header {
+        background: #4285f4;
+        color: white;
+        padding: 1rem;
+      }
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        padding: 1rem;
+      }
+      .gallery-item {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .gallery img, .gallery video {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+      }
+      .gallery-item p {
+        margin: 0.5rem;
+        font-size: 0.9rem;
+        color: #333;
+      }
+    </style>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+    <header>
+      <h1>Galeria Google Drive</h1>
+      <button id="authorize_button">Zaloguj się</button>
+      <button id="signout_button" style="display:none">Wyloguj</button>
+      <br /><br />
+      <input type="file" id="file_input" style="display:none" accept="image/*,video/*" />
+      <button id="upload_button" style="display:none">Wgraj plik</button>
+    </header>
+    <section class="gallery" id="gallery"></section>
+
+    <script>
+      const CLIENT_ID = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com';
+      const API_KEY = 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4';
+      const FOLDER_ID = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk';
+      const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
+
+      let tokenClient;
+      let gapiInited = false;
+      let gisInited = false;
+
+      document.getElementById('authorize_button').onclick = handleAuthClick;
+      document.getElementById('signout_button').onclick = handleSignoutClick;
+      document.getElementById('upload_button').onclick = () => document.getElementById('file_input').click();
+      document.getElementById('file_input').addEventListener('change', uploadFile);
+
+      function gapiLoaded() {
+        gapi.load('client', initializeGapiClient);
+      }
+
+      async function initializeGapiClient() {
+        await gapi.client.init({ apiKey: API_KEY });
+        gapiInited = true;
+        maybeEnableButtons();
+      }
+
+      function gisLoaded() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: CLIENT_ID,
+          scope: SCOPES,
+          callback: '',
+        });
+        gisInited = true;
+        maybeEnableButtons();
+      }
+
+      function maybeEnableButtons() {
+        if (gapiInited && gisInited) {
+          document.getElementById('authorize_button').style.display = 'inline';
+        }
+      }
+
+      function handleAuthClick() {
+        tokenClient.callback = async (resp) => {
+          if (resp.error) throw resp;
+          document.getElementById('signout_button').style.display = 'inline';
+          document.getElementById('authorize_button').style.display = 'none';
+          document.getElementById('upload_button').style.display = 'inline';
+          await listFiles();
+        };
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+      }
+
+      function handleSignoutClick() {
+        google.accounts.oauth2.revoke(gapi.client.getToken().access_token);
+        gapi.client.setToken('');
+        document.getElementById('authorize_button').style.display = 'inline';
+        document.getElementById('signout_button').style.display = 'none';
+        document.getElementById('upload_button').style.display = 'none';
+        document.getElementById('gallery').innerHTML = '';
+      }
+
+      async function listFiles() {
+        try {
+          const response = await gapi.client.request({
+            path: 'https://www.googleapis.com/drive/v3/files',
+            params: {
+              q: `'${FOLDER_ID}' in parents and trashed = false`,
+              fields: 'files(id, name, mimeType, thumbnailLink)',
+            },
+          });
+
+          const gallery = document.getElementById('gallery');
+          gallery.innerHTML = '';
+
+          response.result.files.forEach((file) => {
+            const item = document.createElement('div');
+            item.className = 'gallery-item';
+            
+            // Używamy thumbnailLink jeśli dostępny, w przeciwnym razie używamy standardowego podglądu
+            const previewUrl = file.thumbnailLink 
+              ? file.thumbnailLink.replace('=s220', '=s400') // Zwiększamy rozmiar miniatury
+              : `https://drive.google.com/thumbnail?id=${file.id}&sz=w400-h300`; // Alternatywny sposób na miniaturę
+
+            if (file.mimeType.startsWith('image/')) {
+              const img = document.createElement('img');
+              img.src = previewUrl;
+              img.alt = file.name;
+              item.appendChild(img);
+            } else if (file.mimeType.startsWith('video/')) {
+              // Dla filmów używamy miniaturki zamiast odtwarzacza w galerii
+              const img = document.createElement('img');
+              img.src = previewUrl;
+              img.alt = file.name;
+              item.appendChild(img);
+              
+              // Dodajemy ikonę odtwarzania
+              const playIcon = document.createElement('div');
+              playIcon.innerHTML = '▶';
+              playIcon.style.position = 'absolute';
+              playIcon.style.top = '50%';
+              playIcon.style.left = '50%';
+              playIcon.style.transform = 'translate(-50%, -50%)';
+              playIcon.style.fontSize = '3rem';
+              playIcon.style.color = 'white';
+              playIcon.style.textShadow = '0 0 10px rgba(0,0,0,0.5)';
+              item.appendChild(playIcon);
+              
+              // Po kliknięciu otwieramy pełny film
+              item.onclick = () => {
+                window.open(`https://drive.google.com/file/d/${file.id}/view`, '_blank');
+              };
+            }
+            
+            const fileName = document.createElement('p');
+            fileName.textContent = file.name.length > 20 
+              ? file.name.substring(0, 20) + '...' 
+              : file.name;
+            item.appendChild(fileName);
+            
+            gallery.appendChild(item);
+          });
+        } catch (error) {
+          console.error('Error listing files:', error);
+          alert('Wystąpił błąd podczas ładowania galerii.');
+        }
+      }
+
+      async function uploadFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+          const metadata = {
+            name: file.name,
+            parents: [FOLDER_ID],
+          };
+
+          const accessToken = gapi.client.getToken().access_token;
+          const form = new FormData();
+          form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+          form.append('file', file);
+
+          const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+            method: 'POST',
+            headers: new Headers({ Authorization: 'Bearer ' + accessToken }),
+            body: form,
+          });
+
+          if (res.ok) {
+            alert('Plik wgrany!');
+            await listFiles();
+          } else {
+            throw new Error(await res.text());
+          }
+        } catch (error) {
+          console.error('Upload error:', error);
+          alert('Błąd przy wgrywaniu pliku: ' + error.message);
+        } finally {
+          // Reset input file
+          event.target.value = '';
+        }
+      }
+
+      window.onload = () => {
+        gapiLoaded();
+        gisLoaded();
+      };
+    </script>
+  </body>
+</html>
