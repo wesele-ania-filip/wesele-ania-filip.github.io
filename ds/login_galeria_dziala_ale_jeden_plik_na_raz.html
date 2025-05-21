@@ -46,25 +46,6 @@
         color: #333;
         word-break: break-word;
       }
-      .upload-status {
-        margin: 1rem;
-        padding: 0.5rem;
-        background: #e8f0fe;
-        border-radius: 5px;
-        display: none;
-      }
-      .progress-bar {
-        height: 5px;
-        background: #ddd;
-        margin-top: 5px;
-        border-radius: 5px;
-        overflow: hidden;
-      }
-      .progress {
-        height: 100%;
-        background: #4285f4;
-        width: 0%;
-      }
 
       /* Style dla telefonów */
       @media (max-width: 600px) {
@@ -94,14 +75,8 @@
       <button id="authorize_button">Zaloguj się</button>
       <button id="signout_button" style="display:none">Wyloguj</button>
       <br /><br />
-      <input type="file" id="file_input" style="display:none" accept="image/*,video/*" multiple />
-      <button id="upload_button" style="display:none">Wgraj pliki</button>
-      <div class="upload-status" id="upload_status">
-        <span id="status_text">Przesyłanie plików...</span>
-        <div class="progress-bar">
-          <div class="progress" id="progress"></div>
-        </div>
-      </div>
+      <input type="file" id="file_input" style="display:none" accept="image/*,video/*" />
+      <button id="upload_button" style="display:none">Wgraj plik</button>
     </header>
     <section class="gallery" id="gallery"></section>
 
@@ -118,7 +93,7 @@
       document.getElementById('authorize_button').onclick = handleAuthClick;
       document.getElementById('signout_button').onclick = handleSignoutClick;
       document.getElementById('upload_button').onclick = () => document.getElementById('file_input').click();
-      document.getElementById('file_input').addEventListener('change', uploadFiles);
+      document.getElementById('file_input').addEventListener('change', uploadFile);
 
       function gapiLoaded() {
         gapi.load('client', initializeGapiClient);
@@ -198,6 +173,8 @@
               img.alt = file.name;
               item.appendChild(img);
               
+              // Usunięto przycisk play
+              // Po kliknięciu otwieramy pełny film
               item.style.cursor = 'pointer';
               item.onclick = () => {
                 window.open(`https://drive.google.com/file/d/${file.id}/view`, '_blank');
@@ -218,63 +195,39 @@
         }
       }
 
-      async function uploadFiles(event) {
-        const files = event.target.files;
-        if (!files || files.length === 0) return;
+      async function uploadFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
 
-        const statusElement = document.getElementById('upload_status');
-        const statusText = document.getElementById('status_text');
-        const progressBar = document.getElementById('progress');
-        
-        statusElement.style.display = 'block';
-        statusText.textContent = `Przesyłanie 0 z ${files.length} plików...`;
-        progressBar.style.width = '0%';
+        try {
+          const metadata = {
+            name: file.name,
+            parents: [FOLDER_ID],
+          };
 
-        const accessToken = gapi.client.getToken().access_token;
-        let successCount = 0;
+          const accessToken = gapi.client.getToken().access_token;
+          const form = new FormData();
+          form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+          form.append('file', file);
 
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          try {
-            statusText.textContent = `Przesyłanie ${i+1} z ${files.length}: ${file.name}`;
-            progressBar.style.width = `${(i / files.length) * 100}%`;
+          const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+            method: 'POST',
+            headers: new Headers({ Authorization: 'Bearer ' + accessToken }),
+            body: form,
+          });
 
-            const metadata = {
-              name: file.name,
-              parents: [FOLDER_ID],
-            };
-
-            const form = new FormData();
-            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-            form.append('file', file);
-
-            const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
-              method: 'POST',
-              headers: new Headers({ Authorization: 'Bearer ' + accessToken }),
-              body: form,
-            });
-
-            if (res.ok) {
-              successCount++;
-            } else {
-              console.error(`Błąd przy wgrywaniu pliku ${file.name}:`, await res.text());
-            }
-          } catch (error) {
-            console.error(`Błąd przy wgrywaniu pliku ${file.name}:`, error);
+          if (res.ok) {
+            alert('Plik wgrany!');
+            await listFiles();
+          } else {
+            throw new Error(await res.text());
           }
+        } catch (error) {
+          console.error('Upload error:', error);
+          alert('Błąd przy wgrywaniu pliku: ' + error.message);
+        } finally {
+          event.target.value = '';
         }
-
-        progressBar.style.width = '100%';
-        statusText.textContent = `Zakończono! Przesłano ${successCount} z ${files.length} plików.`;
-        
-        // Odśwież galerię po 2 sekundach
-        setTimeout(() => {
-          statusElement.style.display = 'none';
-          listFiles();
-        }, 2000);
-
-        // Reset input file
-        event.target.value = '';
       }
 
       window.onload = () => {
