@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galeria z Piwonią</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <div class="flower-decoration top-left"></div>
+    <div class="flower-decoration top-right"></div>
+    
+    <header>
+        <h1><span class="peony-icon">🌸</span> Galeria z Piwonią</h1>
+        <p class="subtitle">Zachowaj wspomnienia w kwiatowym stylu</p>
+        <div class="auth-section" id="auth_section">
+            <button id="authorize_button">Zaloguj się, aby dodawać zdjęcia</button>
+            <div id="upload_controls" style="display:none">
+                <button id="signout_button">Wyloguj</button>
+                <button id="upload_button">Dodaj zdjęcia</button>
+            </div>
+        </div>
+        <input type="file" id="file_input" accept="image/*,video/*" multiple />
+    </header>
+
+    <div class="upload-status" id="upload_status">
+        <h3 id="status_text">Przesyłanie plików...</h3>
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+    </div>
+
+    <section class="gallery" id="gallery"></section>
+
+    <div id="imageModal" class="modal">
+        <span class="close">&times;</span>
+        <div class="modal-content" id="modalContent"></div>
+    </div>
+
+    <footer>
+        <a href="https://drive.google.com/drive/folders/1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk" class="drive-link" target="_blank">Otwórz galerię w Google Drive</a>
+        <div class="footer-links">
+            <a href="#">Polityka prywatności</a>
+            <a href="#">Warunki korzystania</a>
+        </div>
+        <p>© 2023 Galeria z Piwonią</p>
+    </footer>
+
+    <script>
+        const CLIENT_ID = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4';
+        const FOLDER_ID = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
+
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+        const modal = document.getElementById('imageModal');
+        const modalContent = document.getElementById('modalContent');
+        const closeBtn = document.getElementsByClassName('close')[0];
+
+        document.getElementById('authorize_button').onclick = handleAuthClick;
+        document.getElementById('signout_button').onclick = handleSignoutClick;
+        document.getElementById('upload_button').onclick = () => document.getElementById('file_input').click();
+        document.getElementById('file_input').addEventListener('change', uploadFiles);
+        closeBtn.onclick = () => modal.style.display = "none";
+
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
+        }
+
+        async function initializeGapiClient() {
+            await gapi.client.init({ 
+                apiKey: API_KEY,
+                discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
+            });
+            gapiInited = true;
+            maybeEnableButtons();
+            loadPublicGallery();
+        }
+
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '',
+            });
+            gisInited = true;
+            maybeEnableButtons();
+        }
+
+        function maybeEnableButtons() {
+            if (gapiInited && gisInited) {
+                document.getElementById('authorize_button').style.display = 'inline-block';
+            }
+        }
+
+        async function loadPublicGallery() {
+            try {
+                const response = await gapi.client.drive.files.list({
+                    q: `'${FOLDER_ID}' in parents and trashed = false`,
+                    fields: 'files(id, name, mimeType, thumbnailLink, webViewLink)',
+                });
+
+                const gallery = document.getElementById('gallery');
+                gallery.innerHTML = '';
+
+                response.result.files.forEach((file) => {
+                    const item = document.createElement('div');
+                    item.className = 'gallery-item';
+                    
+                    const previewUrl = file.thumbnailLink 
+                        ? file.thumbnailLink.replace('=s220', '=s400')
+                        : `https://drive.google.com/thumbnail?id=${file.id}&sz=w400-h300`;
+
+                    if (file.mimeType.startsWith('image/') || file.mimeType.startsWith('video/')) {
+                        const img = document.createElement('img');
+                        img.src = previewUrl;
+                        img.alt = file.name;
+                        img.dataset.id = file.id;
+                        img.dataset.webViewLink = file.webViewLink;
+                        img.addEventListener('click', openFullView);
+                        item.appendChild(img);
+                    }
+                    
+                    gallery.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Error loading public gallery:', error);
+            }
+        }
+
+        function handleAuthClick() {
+            tokenClient.callback = async (resp) => {
+                if (resp.error) throw resp;
+                document.getElementById('authorize_button').style.display = 'none';
+                document.getElementById('upload_controls').style.display = 'block';
+                await listFiles();
+            };
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+
+        function handleSignoutClick() {
+            google.accounts.oauth2.revoke(gapi.client.getToken().access_token);
+            gapi.client.setToken('');
+            document.getElementById('authorize_button').style.display = 'inline-block';
+            document.getElementById('upload_controls').style.display = 'none';
+            loadPublicGallery();
+        }
+
+        async function listFiles() {
+            try {
+                const response = await gapi.client.drive.files.list({
+                    q: `'${FOLDER_ID}' in parents and trashed = false`,
+                    fields: 'files(id, name, mimeType, thumbnailLink, webViewLink)',
+                });
+
+                const gallery = document.getElementById('gallery');
+                gallery.innerHTML = '';
+
+                response.result.files.forEach((file) => {
+                    const item = document.createElement('div');
+                    item.className = 'gallery-item';
+                    
+                    const previewUrl = file.thumbnailLink 
+                        ? file.thumbnailLink.replace('=s220', '=s400')
+                        : `https://drive.google.com/thumbnail?id=${file.id}&sz=w400-h300`;
+
+                    if (file.mimeType.startsWith('image/') || file.mimeType.startsWith('video/')) {
+                        const img = document.createElement('img');
+                        img.src = previewUrl;
+                        img.alt = file.name;
+                        img.dataset.id = file.id;
+                        img.dataset.webViewLink = file.webViewLink;
+                        img.addEventListener('click', openFullView);
+                        item.appendChild(img);
+                    }
+                    
+                    gallery.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Error listing files:', error);
+                alert('Wystąpił błąd podczas ładowania galerii.');
+            }
+        }
+
+        function openFullView(e) {
+            const webViewLink = e.target.dataset.webViewLink;
+            window.open(webViewLink, '_blank');
+        }
+
+        async function uploadFiles(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            const statusElement = document.getElementById('upload_status');
+            const statusText = document.getElementById('status_text');
+            const progressBar = document.getElementById('progress');
+            
+            statusElement.style.display = 'block';
+            statusText.textContent = `Przesyłanie 0 z ${files.length} plików...`;
+            progressBar.style.width = '0%';
+
+            const accessToken = gapi.client.getToken().access_token;
+            let successCount = 0;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                try {
+                    statusText.textContent = `Przesyłanie ${i+1} z ${files.length}: ${file.name}`;
+                    progressBar.style.width = `${(i / files.length) * 100}%`;
+
+                    const metadata = {
+                        name: file.name,
+                        parents: [FOLDER_ID],
+                    };
+
+                    const form = new FormData();
+                    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                    form.append('file', file);
+
+                    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+                        method: 'POST',
+                        headers: new Headers({ Authorization: 'Bearer ' + accessToken }),
+                        body: form,
+                    });
+
+                    if (res.ok) {
+                        successCount++;
+                    } else {
+                        console.error(`Błąd przy wgrywaniu pliku ${file.name}:`, await res.text());
+                    }
+                } catch (error) {
+                    console.error(`Błąd przy wgrywaniu pliku ${file.name}:`, error);
+                }
+            }
+
+            progressBar.style.width = '100%';
+            statusText.textContent = `Zakończono! Przesłano ${successCount} z ${files.length} plików.`;
+            
+            setTimeout(() => {
+                statusElement.style.display = 'none';
+                listFiles();
+            }, 2000);
+
+            event.target.value = '';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        window.onload = () => {
+            gapiLoaded();
+            gisLoaded();
+        };
+    </script>
+</body>
+</html>
