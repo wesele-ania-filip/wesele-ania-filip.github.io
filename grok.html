@@ -9,6 +9,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Draggable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@200;400;600;800&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -16,9 +17,9 @@
       --peony-light: #ffcad4;
       --peony-dark: #6d0c37;
       --peony-accent: #fff9fb;
-      --peony-glow: rgba(216, 27, 96, 0.5);
+      --peony-glow: rgba(216, 27, 96, 0.6);
       --peony-gradient: linear-gradient(135deg, #ffcad4 0%, #fff9fb 50%, #f8bbd0 100%);
-      --shadow: 0 10px 40px rgba(31, 38, 135, 0.25);
+      --shadow: 0 12px 48px rgba(31, 38, 135, 0.3);
     }
     body {
       font-family: 'Inter', sans-serif;
@@ -34,48 +35,58 @@
       background: linear-gradient(135deg, #2f1625, #120814);
       color: #ffcad4;
     }
+    #canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      opacity: 0.5;
+    }
     .background-overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: radial-gradient(circle, rgba(255, 202, 212, 0.3), transparent);
+      background: radial-gradient(circle, rgba(255, 202, 212, 0.4), transparent);
       pointer-events: none;
       z-index: -1;
-      animation: pulse 10s infinite ease-in-out;
+      animation: pulse 12s infinite ease-in-out;
     }
     @keyframes pulse {
-      0%, 100% { opacity: 0.5; }
-      50% { opacity: 0.8; }
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.7; }
     }
     .container {
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(15px);
-      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(20px);
+      border-radius: 40px;
       box-shadow: var(--shadow);
-      border: 1px solid rgba(216, 27, 96, 0.2);
-      transform: perspective(1000px);
+      border: 1px solid rgba(216, 27, 96, 0.25);
+      transform: perspective(1200px);
+      padding: 2rem;
     }
     .dark-theme .container {
-      background: rgba(30, 30, 30, 0.92);
-      border-color: rgba(255, 202, 212, 0.2);
+      background: rgba(20, 20, 20, 0.9);
+      border-color: rgba(255, 202, 212, 0.25);
     }
     .file-card {
       background: var(--peony-accent);
-      border-radius: 20px;
+      border-radius: 24px;
       overflow: hidden;
-      transition: transform 0.5s ease, box-shadow 0.5s ease;
+      transition: transform 0.6s ease, box-shadow 0.6s ease;
       cursor: move;
       position: relative;
-      transform: perspective(1000px) rotateY(0deg);
+      transform: perspective(1200px) rotateY(0deg);
     }
     .dark-theme .file-card {
-      background: #281821;
+      background: #25161f;
     }
     .file-card:hover {
-      transform: perspective(1000px) rotateY(5deg) translateY(-12px);
-      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+      transform: perspective(1200px) rotateY(8deg) translateY(-15px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
     }
     .file-card::before {
       content: '';
@@ -83,71 +94,71 @@
       top: 0;
       left: 0;
       width: 100%;
-      height: 6px;
+      height: 8px;
       background: linear-gradient(to right, var(--peony-pink), var(--peony-light));
       opacity: 0;
-      transition: opacity 0.4s ease;
+      transition: opacity 0.5s ease;
     }
     .file-card:hover::before {
       opacity: 1;
     }
     .loader {
-      border: 8px solid var(--peony-accent);
-      border-top: 8px solid var(--peony-pink);
+      border: 10px solid var(--peony-accent);
+      border-top: 10px solid var(--peony-pink);
       border-radius: 50%;
-      width: 64px;
-      height: 64px;
-      animation: spin 0.6s linear infinite;
+      width: 72px;
+      height: 72px;
+      animation: spin 0.5s linear infinite;
     }
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
     .filter-input, .sort-select {
-      background: rgba(255, 255, 255, 0.85);
-      border: 1px solid rgba(216, 27, 96, 0.3);
-      border-radius: 16px;
-      transition: all 0.4s ease;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(216, 27, 96, 0.4);
+      border-radius: 20px;
+      transition: all 0.5s ease;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
     }
     .dark-theme .filter-input, .dark-theme .sort-select {
-      background: rgba(40, 40, 40, 0.85);
-      border-color: rgba(255, 202, 212, 0.3);
+      background: rgba(30, 30, 30, 0.8);
+      border-color: rgba(255, 202, 212, 0.4);
     }
     .filter-input:focus, .sort-select:focus {
       border-color: var(--peony-pink);
-      box-shadow: 0 0 15px var(--peony-glow);
-      transform: scale(1.02);
+      box-shadow: 0 0 20px var(--peony-glow);
+      transform: scale(1.03);
     }
     .preview-modal {
-      transform: translateY(100%) rotateX(-10deg);
-      transition: transform 0.7s ease;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(15px);
-      border-radius: 28px;
+      transform: translateY(100%) rotateX(-15deg);
+      transition: transform 0.8s ease;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(20px);
+      border-radius: 32px;
       box-shadow: var(--shadow);
-      border: 1px solid rgba(216, 27, 96, 0.2);
+      border: 1px solid rgba(216, 27, 96, 0.25);
     }
     .dark-theme .preview-modal {
-      background: rgba(30, 30, 30, 0.95);
-      border-color: rgba(255, 202, 212, 0.2);
+      background: rgba(20, 20, 20, 0.92);
+      border-color: rgba(255, 202, 212, 0.25);
     }
     .preview-modal.active {
       transform: translateY(0) rotateX(0deg);
     }
     img, iframe {
-      transition: opacity 0.7s ease, transform 0.7s ease;
+      transition: opacity 0.8s ease, transform 0.8s ease;
     }
     h1 {
       font-family: 'Playfair Display', serif;
-      letter-spacing: 1px;
-      text-shadow: 0 2px 10px rgba(216, 27, 96, 0.3);
+      letter-spacing: 1.5px;
+      text-shadow: 0 3px 12px var(--peony-glow);
     }
     .btn {
       position: relative;
       overflow: hidden;
-      border-radius: 12px;
-      transition: all 0.4s ease;
+      border-radius: 16px;
+      transition: all 0.5s ease;
     }
     .btn::after {
       content: '';
@@ -156,38 +167,40 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.4), transparent);
-      transition: left 0.6s ease;
+      background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.5), transparent);
+      transition: left 0.7s ease;
     }
     .btn:hover::after {
       left: 100%;
     }
     .btn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 5px 15px var(--peony-glow);
+      transform: scale(1.06);
+      box-shadow: 0 6px 20px var(--peony-glow);
     }
     .icon {
-      font-size: 1.5rem;
-      transition: transform 0.4s ease;
+      width: 32px;
+      height: 32px;
+      transition: transform 0.5s ease;
     }
     .file-card:hover .icon {
-      transform: scale(1.2);
+      transform: scale(1.3) rotate(5deg);
     }
   </style>
 </head>
-<body class="light-theme flex flex-col items-center p-10">
+<body class="light-theme flex flex-col items-center p-12">
+  <canvas id="canvas"></canvas>
   <div class="background-overlay"></div>
-  <div class="container max-w-7xl w-full p-12 relative z-10">
-    <div class="flex flex-col sm:flex-row justify-between items-center mb-12">
-      <h1 class="text-6xl font-extrabold text-[var(--peony-dark)] dark:text-[var(--peony-light)]">Folder Google Drive</h1>
-      <div class="flex gap-6 mt-6 sm:mt-0">
-        <button id="themeToggle" class="btn bg-[var(--peony-pink)] text-white px-6 py-3 text-lg rounded-xl hover:bg-[var(--peony-dark)]">Tryb ciemny</button>
-        <button id="layoutToggle" class="btn bg-[var(--peony-light)] text-[var(--peony-dark)] px-6 py-3 text-lg rounded-xl hover:bg-[var(--peony-pink)] hover:text-white">Lista</button>
+  <div class="container max-w-7xl w-full p-16 relative z-10">
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-16">
+      <h1 class="text-7xl font-extrabold text-[var(--peony-dark)] dark:text-[var(--peony-light)]">Folder Google Drive</h1>
+      <div class="flex gap-8 mt-8 sm:mt-0">
+        <button id="themeToggle" class="btn bg-[var(--peony-pink)] text-white px-8 py-4 text-xl rounded-xl hover:bg-[var(--peony-dark)]">Tryb ciemny</button>
+        <button id="layoutToggle" class="btn bg-[var(--peony-light)] text-[var(--peony-dark)] px-8 py-4 text-xl rounded-xl hover:bg-[var(--peony-pink)] hover:text-white">Lista</button>
       </div>
     </div>
-    <div class="flex flex-col sm:flex-row gap-6 mb-12">
-      <input id="searchInput" type="text" placeholder="Szukaj plików..." class="filter-input w-full sm:w-1/2 p-4 text-lg text-[var(--peony-dark)] dark:text-[var(--peony-light)]">
-      <select id="sortSelect" class="sort-select w-full sm:w-1/4 p-4 text-lg text-[var(--peony-dark)] dark:text-[var(--peony-light)]">
+    <div class="flex flex-col sm:flex-row gap-8 mb-16">
+      <input id="searchInput" type="text" placeholder="Szukaj plików..." class="filter-input w-full sm:w-1/2 p-5 text-xl text-[var(--peony-dark)] dark:text-[var(--peony-light)]">
+      <select id="sortSelect" class="sort-select w-full sm:w-1/4 p-5 text-xl text-[var(--peony-dark)] dark:text-[var(--peony-light)]">
         <option value="name">Nazwa (A-Z)</option>
         <option value="nameDesc">Nazwa (Z-A)</option>
         <option value="type">Typ pliku</option>
@@ -197,213 +210,22 @@
     <div id="loading" class="flex justify-center items-center">
       <div class="loader"></div>
     </div>
-    <div id="fileList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10"></div>
-    <div id="errorMessage" class="hidden text-center text-red-500 mt-10 text-xl font-medium"></div>
+    <div id="fileList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12"></div>
+    <div id="errorMessage" class="hidden text-center text-red-500 mt-12 text-2xl font-medium"></div>
   </div>
 
-  <div id="previewModal" class="fixed inset-0 bg-black bg-opacity-85 flex items-center justify-center z-50 hidden">
-    <div class="preview-modal p-10 max-w-5xl w-full max-h-[90vh] overflow-auto">
-      <div class="flex justify-between items-center mb-8">
-        <h2 id="previewTitle" class="text-4xl font-bold text-[var(--peony-dark)] dark:text-[var(--peony-light)]"></h2>
-        <button id="closePreview" class="text-gray-500 hover:text-[var(--peony-pink)] text-3xl">✖</button>
+  <div id="previewModal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 hidden">
+    <div class="preview-modal p-12 max-w-6xl w-full max-h-[90vh] overflow-auto">
+      <div class="flex justify-between items-center mb-10">
+        <h2 id="previewTitle" class="text-5xl font-bold text-[var(--peony-dark)] dark:text-[var(--peony-light)]"></h2>
+        <button id="closePreview" class="text-gray-500 hover:text-[var(--peony-pink)] text-4xl">✖</button>
       </div>
       <div id="previewContent"></div>
     </div>
   </div>
 
   <script>
-    const FOLDER_ID = '1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk'; // Wstaw ID folderu Google Drive
-    const API_KEY = 'AIzaSyDbs-HMHt__vQAjeSuU89U4WBhlr5EEnx4'; // Wstaw klucz API Google
-    const CLIENT_ID = '423158260926-21qotkdtat68fh814ilqmqkc82rdo1m8.apps.googleusercontent.com'; // Wstaw Client ID z Google Cloud Console
-
-    let filesData = [];
-    let isGridLayout = true;
-
-    function loadGapi() {
-      gapi.load('client:auth2', initClient);
-    }
-
-    function initClient() {
-      gapi.client.init({
-        apiKey: API_KEY,
-        clientId: CLIENT_ID,
-        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-        scope: 'https://www.googleapis.com/auth/drive.readonly'
-      }).then(() => {
-        if (!gapi.auth2.getAuthInstance().isSignedIn.get()) {
-          gapi.auth2.getAuthInstance().signIn();
-        }
-        listFiles();
-      }).catch(error => {
-        showError('Błąd inicjalizacji API: ' + error.message);
-      });
-    }
-
-    function listFiles() {
-      gapi.client.drive.files.list({
-        q: `'${FOLDER_ID}' in parents and trashed=false`,
-        fields: 'files(id, name, mimeType, webViewLink, webContentLink, thumbnailLink, createdTime)'
-      }).then(response => {
-        filesData = response.result.files;
-        document.getElementById('loading').style.display = 'none';
-        renderFiles(filesData);
-      }).catch(error => {
-        showError('Błąd ładowania plików: ' + error.message);
-      });
-    }
-
-    function renderFiles(files) {
-      const fileList = document.getElementById('fileList');
-      fileList.className = isGridLayout ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10' : 'flex flex-col gap-6';
-      fileList.innerHTML = '';
-
-      files.forEach((file, index) => {
-        const fileCard = document.createElement('div');
-        fileCard.className = `file-card p-8 ${isGridLayout ? '' : 'flex items-center gap-8'}`;
-        fileCard.setAttribute('data-id', file.id);
-        const icon = file.mimeType.includes('folder') ? '📁' : file.mimeType.includes('image') ? '🖼️' : file.mimeType.includes('pdf') ? '📜' : '📄';
-        const thumbnail = file.thumbnailLink && (file.mimeType.includes('image') || file.mimeType.includes('pdf')) 
-          ? `<img src="${file.thumbnailLink}" alt="${file.name}" class="w-full h-48 object-cover rounded-xl mb-4 opacity-0" onload="this.style.opacity='1'">` 
-          : '';
-        fileCard.innerHTML = `
-          ${thumbnail}
-          <div class="${isGridLayout ? '' : 'flex-1'}">
-            <h3 class="text-2xl font-semibold text-[var(--peony-dark)] dark:text-[var(--peony-light)] truncate"><span class="icon">${icon}</span> ${file.name}</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-300">${file.mimeType.includes('folder') ? 'Folder' : 'Plik'}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">${new Date(file.createdTime).toLocaleDateString()}</p>
-            <div class="mt-4 flex gap-4">
-              <a href="${file.webViewLink}" target="_blank" class="btn bg-[var(--peony-pink)] text-white px-5 py-2 rounded-xl hover:bg-[var(--peony-dark)]">Otwórz</a>
-              ${file.mimeType.includes('image') || file.mimeType.includes('pdf') ? `<button onclick="showPreview('${file.id}', '${file.name}', '${file.mimeType}', '${file.webContentLink}')" class="btn bg-[var(--peony-light)] text-[var(--peony-dark)] px-5 py-2 rounded-xl hover:bg-[var(--peony-pink)] hover:text-white">Podgląd</button>` : ''}
-            </div>
-          </div>
-        `;
-        fileList.appendChild(fileCard);
-
-        // Animacja GSAP
-        gsap.from(fileCard, {
-          opacity: 0,
-          y: 60,
-          scale: 0.9,
-          rotateY: 15,
-          duration: 0.7,
-          delay: index * 0.2,
-          ease: 'back.out(1.4)'
-        });
-
-        // Parallax dla kart
-        fileCard.addEventListener('mousemove', (e) => {
-          const rect = fileCard.getBoundingClientRect();
-          const x = (e.clientX - rect.left) / rect.width - 0.5;
-          const y = (e.clientY - rect.top) / rect.height - 0.5;
-          gsap.to(fileCard, {
-            rotateY: x * 10,
-            rotateX: -y * 10,
-            duration: 0.3,
-            ease: 'power2.out'
-          });
-        });
-        fileCard.addEventListener('mouseleave', () => {
-          gsap.to(fileCard, {
-            rotateY: 0,
-            rotateX: 0,
-            duration: 0.5,
-            ease: 'power2.out'
-          });
-        });
-      });
-
-      // Drag-and-drop
-      Draggable.create('.file-card', {
-        bounds: '#fileList',
-        onDragEnd: function() {
-          const newOrder = Array.from(fileList.children).map(card => card.getAttribute('data-id'));
-          filesData = newOrder.map(id => filesData.find(file => file.id === id));
-          renderFiles(filesData);
-        }
-      });
-
-      // ScrollTrigger dla animacji tła
-      gsap.to('.background-overlay', {
-        backgroundPosition: '50% 100%',
-        scrollTrigger: {
-          trigger: '.container',
-          scrub: 1
-        }
-      });
-    }
-
-    function showPreview(id, name, mimeType, webContentLink) {
-      const modal = document.getElementById('previewModal');
-      const previewTitle = document.getElementById('previewTitle');
-      const previewContent = document.getElementById('previewContent');
-      previewTitle.textContent = name;
-      previewContent.innerHTML = mimeType.includes('image') 
-        ? `<img src="${webContentLink}" alt="${name}" class="w-full max-h-[75vh] object-contain rounded-xl">`
-        : `<iframe src="${webContentLink}" class="w-full h-[75vh] rounded-xl"></iframe>`;
-      modal.classList.remove('hidden');
-      gsap.to('.preview-modal', { 
-        transform: 'translateY(0) rotateX(0deg)', 
-        duration: 0.8, 
-        ease: 'power4.out' 
-      });
-    }
-
-    function showError(message) {
-      const errorDiv = document.getElementById('errorMessage');
-      errorDiv.textContent = message;
-      errorDiv.classList.remove('hidden');
-      document.getElementById('loading').style.display = 'none';
-      gsap.from(errorDiv, { opacity: 0, y: 30, duration: 0.6, ease: 'power3.out' });
-    }
-
-    document.getElementById('themeToggle').addEventListener('click', () => {
-      document.body.classList.toggle('light-theme');
-      document.body.classList.toggle('dark-theme');
-      document.getElementById('themeToggle').textContent = document.body.classList.contains('dark-theme') ? 'Tryb jasny' : 'Tryb ciemny';
-      gsap.to('body', { opacity: 0.7, duration: 0.4, ease: 'power2.out', onComplete: () => gsap.to('body', { opacity: 1, duration: 0.4 }) });
-    });
-
-    document.getElementById('layoutToggle').addEventListener('click', () => {
-      isGridLayout = !isGridLayout;
-      document.getElementById('layoutToggle').textContent = isGridLayout ? 'Lista' : 'Siatka';
-      renderFiles(filesData);
-    });
-
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase();
-      const filteredFiles = filesData.filter(file => file.name.toLowerCase().includes(query));
-      renderFiles(filteredFiles);
-    });
-
-    document.getElementById('sortSelect').addEventListener('change', (e) => {
-      const sortBy = e.target.value;
-      let sortedFiles = [...filesData];
-      if (sortBy === 'name') {
-        sortedFiles.sort((a, b) => a.name.localeCompare(b.name));
-      } else if (sortBy === 'nameDesc') {
-        sortedFiles.sort((a, b) => b.name.localeCompare(a.name));
-      } else if (sortBy === 'type') {
-        sortedFiles.sort((a, b) => a.mimeType.localeCompare(b.mimeType));
-      } else if (sortBy === 'date') {
-        sortedFiles.sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
-      }
-      renderFiles(sortedFiles);
-    });
-
-    document.getElementById('closePreview').addEventListener('click', () => {
-      const modal = document.getElementById('previewModal');
-      gsap.to('.preview-modal', {
-        transform: 'translateY(100%) rotateX(-10deg)',
-        duration: 0.8,
-        ease: 'power4.in',
-        onComplete: () => modal.classList.add('hidden')
-      });
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-      loadGapi();
-      gsap.from('.container', { opacity: 0, y: 100, duration: 1, ease: 'power4.out' });
-    });
-  </script>
-</body>
-</html>
+    // Custom SVG icons
+    const icons = {
+      folder: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="var(--peony-pink)" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+      image: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="var(--peony-pink)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8
