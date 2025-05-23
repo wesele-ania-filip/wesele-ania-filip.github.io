@@ -8,121 +8,163 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
     :root {
-      --primary-color: #f8b7cc;
-      --secondary-color: #ffd1dc;
-      --light-pink: #fef6f8;
-      --dark-pink: #f29cb6;
+      --primary-color: #f3d7e8; /* Bardzo delikatny róż */
+      --secondary-color: #f8e9f1; /* Jeszcze jaśniejszy róż */
+      --light-bg: #fcfafb; /* Niemal biały z lekkim różowym odcieniem */
+      --dark-pink: #e8c0d5; /* Subtelny, przygaszony róż */
+      --text-color: #555; /* Ciemnoszary zamiast czarnego */
+      --light-gray: #f5f5f5;
     }
     
     body {
-      background-color: var(--light-pink);
+      background-color: var(--light-bg);
       font-family: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text-color);
     }
     
     .header {
-      background: linear-gradient(135deg, var(--primary-color), var(--dark-pink));
-      color: white;
+      background: white;
       padding: 40px 0;
       margin-bottom: 50px;
-      box-shadow: 0 4px 15px rgba(248, 183, 204, 0.1);
+      border-bottom: 1px solid rgba(0,0,0,0.05);
     }
     
     .couple-names {
       font-size: 2.5rem;
-      font-weight: 600;
+      font-weight: 500;
       letter-spacing: 1px;
       margin-bottom: 10px;
+      color: #d4a5c1; /* Delikatny, pastelowy róż */
     }
     
     .gallery-container {
       background: white;
-      border-radius: 20px;
-      padding: 35px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      border-radius: 12px;
+      padding: 30px;
       margin-bottom: 50px;
+      border: 1px solid rgba(0,0,0,0.03);
     }
     
     .gallery-item {
       margin-bottom: 30px;
-      transition: all 0.4s ease;
-      border-radius: 15px;
+      transition: all 0.3s ease;
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      border: 1px solid rgba(248, 183, 204, 0.1);
+      box-shadow: 0 2px 15px rgba(0,0,0,0.03);
+      border: 1px solid rgba(0,0,0,0.03);
+      background: white;
     }
     
     .gallery-item:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 6px 20px rgba(248, 183, 204, 0.1);
+      transform: translateY(-3px);
+      box-shadow: 0 5px 20px rgba(0,0,0,0.05);
     }
     
     .info-card {
       background: white;
-      border-radius: 20px;
-      padding: 35px;
+      border-radius: 12px;
+      padding: 30px;
       margin-bottom: 40px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-      border-left: 4px solid var(--primary-color);
+      border: 1px solid rgba(0,0,0,0.03);
     }
     
     .info-card i {
-      color: var(--primary-color);
+      color: var(--dark-pink);
       font-size: 1.4rem;
       margin-bottom: 12px;
     }
     
     .btn-drive {
-      background-color: var(--primary-color);
-      color: white;
+      background-color: white;
+      color: #d4a5c1;
       border-radius: 50px;
-      padding: 12px 30px;
+      padding: 10px 25px;
       font-weight: 500;
       transition: all 0.3s;
-      border: none;
+      border: 1px solid #e8c0d5;
     }
     
     .btn-drive:hover {
-      background-color: var(--dark-pink);
+      background-color: var(--light-bg);
+      color: #c995b5;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(248, 183, 204, 0.2);
-      color: white;
+      border-color: #d4a5c1;
     }
     
     .footer {
       margin-top: 60px;
       padding: 40px 0;
-      background: linear-gradient(135deg, var(--primary-color), var(--dark-pink));
-      color: white;
+      background: white;
+      color: var(--text-color);
+      border-top: 1px solid rgba(0,0,0,0.05);
     }
     
     .spinner-border.text-primary {
-      color: var(--primary-color) !important;
+      color: var(--dark-pink) !important;
     }
     
     .empty-state {
       text-align: center;
       padding: 50px 0;
+      background: var(--light-bg);
+      border-radius: 12px;
     }
     
     .empty-state i {
-      font-size: 4.5rem;
-      color: var(--secondary-color);
+      font-size: 4rem;
+      color: var(--dark-pink);
       margin-bottom: 15px;
+      opacity: 0.7;
     }
     
     h1, h2, h3, h4, h5, h6 {
-      font-weight: 600;
+      font-weight: 500;
+      color: #6d6d6d;
     }
     
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap');
+    .text-muted {
+      color: #999 !important;
+    }
+    
+    .card-img-container {
+      height: 250px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--light-gray);
+    }
+    
+    .card-img-container img {
+      object-fit: cover;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.5s ease;
+    }
+    
+    .gallery-item:hover .card-img-container img {
+      transform: scale(1.05);
+    }
+    
+    .btn-outline-primary {
+      color: var(--dark-pink);
+      border-color: var(--dark-pink);
+    }
+    
+    .btn-outline-primary:hover {
+      background-color: var(--light-bg);
+      color: var(--dark-pink);
+    }
+    
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap');
   </style>
 </head>
 <body>
   <div class="header text-center">
     <div class="container">
       <div class="couple-names">Ania & Filip</div>
-      <h1><i class="fas fa-heart me-3"></i> Nasza Galeria Weselna</h1>
-      <p class="lead mt-3">Zapraszamy do dzielenia się wspólnymi wspomnieniami</p>
+      <h1><i class="fas fa-heart me-3" style="color: #e8c0d5;"></i> Nasza Galeria Weselna</h1>
+      <p class="lead mt-3" style="color: #888;">Zapraszamy do dzielenia się wspólnymi wspomnieniami</p>
     </div>
   </div>
 
@@ -130,11 +172,11 @@
     <div class="info-card">
       <div class="row align-items-center">
         <div class="col-md-2 text-center">
-          <i class="fas fa-info-circle fa-3x"></i>
+          <i class="fas fa-info-circle fa-3x" style="color: #e8c0d5;"></i>
         </div>
         <div class="col-md-8">
           <h3>Jak dodać swoje zdjęcia?</h3>
-          <p>Drodzy Goście, aby dodać zdjęcia z naszego wesela, przejdźcie do folderu na Google Drive. Możecie przesyłać zdjęcia bezpośrednio tam, a pojawią się one w galerii.</p>
+          <p style="color: #777;">Drodzy Goście, aby dodać zdjęcia z naszego wesela, przejdźcie do folderu na Google Drive. Możecie przesyłać zdjęcia bezpośrednio tam, a pojawią się one w galerii.</p>
         </div>
         <div class="col-md-2 text-center text-md-end">
           <a href="https://drive.google.com/drive/folders/1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk" class="btn btn-drive">
@@ -149,7 +191,7 @@
         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
           <span class="visually-hidden">Ładowanie...</span>
         </div>
-        <p class="mt-3">Ładowanie wspomnień...</p>
+        <p class="mt-3" style="color: #888;">Ładowanie wspomnień...</p>
       </div>
       
       <div class="empty-state" id="noFilesAlert" style="display: none;">
@@ -167,8 +209,8 @@
 
   <div class="footer text-center">
     <div class="container">
-      <h4>Dziękujemy, że tworzycie z nami tę historię!</h4>
-      <p class="mt-3 mb-0">© 2023 Wesele Ani i Filipa | Wszelkie prawa zastrzeżone</p>
+      <h4 style="color: #6d6d6d;">Dziękujemy, że tworzycie z nami tę historię!</h4>
+      <p class="mt-3 mb-0" style="color: #999;">© 2023 Wesele Ani i Filipa | Wszelkie prawa zastrzeżone</p>
     </div>
   </div>
 
@@ -230,18 +272,18 @@
           let mediaContent = '';
           if (file.mimeType.includes('image/')) {
             mediaContent = `
-              <img src="${file.thumbnail}" class="card-img-top" alt="${file.name}" 
-                   style="height: 250px; object-fit: cover; cursor: pointer;"
-                   onclick="openModal('${file.thumbnail.replace('=w400', '=w1200')}', '${file.name}')">
+              <div class="card-img-container">
+                <img src="${file.thumbnail}" alt="${file.name}" 
+                     onclick="openModal('${file.thumbnail.replace('=w400', '=w1200')}', '${file.name}')">
+              </div>
             `;
           } else if (file.mimeType.includes('video/')) {
             mediaContent = `
-              <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
-                   style="height: 250px; cursor: pointer; position: relative;"
+              <div class="card-img-container position-relative" 
                    onclick="window.open('${file.url}', '_blank')">
-                <i class="fas fa-film fa-4x text-secondary"></i>
-                <div class="position-absolute bottom-0 end-0 m-2 bg-dark text-white px-2 rounded">
-                  <i class="fas fa-play"></i> Odtwórz
+                <i class="fas fa-film fa-4x" style="color: #ddd;"></i>
+                <div class="position-absolute bottom-0 end-0 m-2" style="background-color: rgba(0,0,0,0.7); color: white; padding: 2px 8px; border-radius: 4px;">
+                  <i class="fas fa-play me-1"></i> Odtwórz
                 </div>
               </div>
             `;
@@ -250,7 +292,7 @@
           card.innerHTML = `
             ${mediaContent}
             <div class="card-body">
-              <h5 class="card-title text-truncate">${file.name}</h5>
+              <h5 class="card-title" style="color: #666;">${truncateFilename(file.name)}</h5>
               <div class="d-flex justify-content-between align-items-center">
                 <small class="text-muted">${formatFileType(file.mimeType)}</small>
                 <a href="${file.url}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill">
@@ -264,14 +306,28 @@
           gallery.appendChild(col);
         });
       }
+      
+      function truncateFilename(name) {
+        const maxLength = 22;
+        if (name.length > maxLength) {
+          const extensionIndex = name.lastIndexOf('.');
+          if (extensionIndex > 0) {
+            const namePart = name.substring(0, maxLength - 3 - (name.length - extensionIndex));
+            const extension = name.substring(extensionIndex);
+            return namePart + '...' + extension;
+          }
+          return name.substring(0, maxLength - 3) + '...';
+        }
+        return name;
+      }
     });
     
     // Funkcje pomocnicze
     function formatFileType(mimeType) {
-      if (mimeType.includes('image/jpeg')) return 'Zdjęcie JPEG';
-      if (mimeType.includes('image/png')) return 'Zdjęcie PNG';
+      if (mimeType.includes('image/jpeg')) return 'JPEG';
+      if (mimeType.includes('image/png')) return 'PNG';
       if (mimeType.includes('image/gif')) return 'GIF';
-      if (mimeType.includes('video/')) return 'Film';
+      if (mimeType.includes('video/')) return 'Wideo';
       return mimeType.split('/')[1]?.toUpperCase() || 'Plik';
     }
     
@@ -279,16 +335,16 @@
       const modalHtml = `
         <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">${title}</h5>
+            <div class="modal-content" style="border-radius: 12px; overflow: hidden;">
+              <div class="modal-header" style="background-color: #fcfafb; border-bottom: 1px solid #eee;">
+                <h5 class="modal-title" style="color: #666;">${title}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
-              <div class="modal-body text-center">
-                <img src="${imageSrc}" class="img-fluid" style="max-height: 80vh; border-radius: 8px;">
+              <div class="modal-body text-center p-0">
+                <img src="${imageSrc}" class="img-fluid w-100" style="max-height: 80vh; object-fit: contain;">
               </div>
-              <div class="modal-footer">
-                <a href="${imageSrc.replace('=w1200', '=w1200')}" download="${title}" class="btn btn-primary rounded-pill">
+              <div class="modal-footer" style="background-color: #fcfafb; border-top: 1px solid #eee;">
+                <a href="${imageSrc}" download="${title}" class="btn btn-primary rounded-pill" style="background-color: #e8c0d5; border: none;">
                   <i class="fas fa-download me-2"></i> Pobierz
                 </a>
               </div>
