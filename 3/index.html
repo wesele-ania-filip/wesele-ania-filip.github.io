@@ -13,19 +13,23 @@
     
     <header>
         <h1><span class="peony-icon">🌸</span> Galeria z Piwonią</h1>
-        <p class="subtitle">Zachowaj wspomnienia w kwiatowym stylu</p>
-        <div class="auth-section">
-            <div class="button-group">
-                <button id="login-btn">Zaloguj się</button>
-                <button id="logout-btn" style="display: none;">Wyloguj</button>
-                <button id="upload-btn" style="display: none;">Dodaj zdjęcia</button>
+        <p class="subtitle">Twoje wspomnienia w kwiatowym stylu</p>
+        <div class="search-filter">
+            <input type="text" id="search-input" placeholder="Wyszukaj zdjęcia lub filmy..." aria-label="Wyszukaj w galerii">
+            <div class="filter-group">
+                <button class="filter-btn active" data-filter="all">Wszystko</button>
+                <button class="filter-btn" data-filter="image">Zdjęcia</button>
+                <button class="filter-btn" data-filter="video">Filmy</button>
             </div>
         </div>
     </header>
 
     <main>
-        <input type="file" id="file_input" accept="image/*,video/*" multiple>
-        <section class="gallery" id="gallery"></section>
+        <input type="file" id="file_input" accept="image/*,video/*" multiple aria-label="Wybierz pliki do przesłania">
+        <button id="upload-btn">Dodaj zdjęcia lub filmy</button>
+        <section class="gallery" id="gallery">
+            <!-- Gallery items will be populated dynamically via JavaScript -->
+        </section>
         
         <div class="upload-status" id="upload-status">
             <p>Przesyłanie plików...</p>
@@ -34,7 +38,7 @@
     </main>
 
     <div class="modal" id="modal">
-        <span class="close">&times;</span>
+        <span class="close" aria-label="Zamknij podgląd">×</span>
         <div class="modal-content" id="modal-content"></div>
     </div>
 
@@ -46,5 +50,7 @@
         </div>
         <p>© 2025 Galeria z Piwonią</p>
     </footer>
+
+    <script src="script.js"></script>
 </body>
 </html>
