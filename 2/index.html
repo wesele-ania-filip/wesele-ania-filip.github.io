@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEO Gallery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="glass-container">
+        <header>
+            <h1><span class="gradient-text">NEO</span> Gallery</h1>
+            <div class="auth-section" id="auth_section">
+                <button id="authorize_button" class="glass-button">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
+                <div id="upload_controls" style="display:none">
+                    <button id="signout_button" class="glass-button">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                    <button id="upload_button" class="glass-button">
+                        <i class="fas fa-cloud-upload-alt"></i> Upload
+                    </button>
+                </div>
+            </div>
+            <input type="file" id="file_input" accept="image/*,video/*" multiple />
+        </header>
+
+        <div class="upload-status" id="upload_status">
+            <div class="status-content">
+                <h3 id="status_text">Uploading files...</h3>
+                <div class="progress-bar">
+                    <div class="progress" id="progress"></div>
+                </div>
+            </div>
+        </div>
+
+        <section class="gallery" id="gallery"></section>
+    </div>
+
+    <div id="imageModal" class="modal">
+        <span class="close">&times;</span>
+        <div class="modal-content" id="modalContent"></div>
+    </div>
+
+    <footer>
+        <a href="https://drive.google.com/drive/folders/1XZnCvIUSJ0VQ13AlDJHp8VWSM_zZueTk" class="drive-link" target="_blank">
+            <i class="fas fa-external-link-alt"></i> Open in Drive
+        </a>
+        <div class="footer-links">
+            <a href="#"><i class="fas fa-lock"></i> Privacy</a>
+            <a href="#"><i class="fas fa-file-alt"></i> Terms</a>
+        </div>
+    </footer>
+
+    <div class="particles" id="particles"></div>
+
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="app.js"></script>
+</body>
+</html>

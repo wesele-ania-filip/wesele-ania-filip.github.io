@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌸 Galeria z Piwonią</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="flower-decoration top-left"></div>
+    <div class="flower-decoration top-right"></div>
+    
+    <header>
+        <h1><span class="peony-icon">🌸</span> Galeria z Piwonią</h1>
+        <p class="subtitle">Zachowaj wspomnienia w kwiatowym stylu</p>
+        <div class="auth-section">
+            <div class="button-group">
+                <button id="login-btn">Zaloguj się</button>
+                <button id="logout-btn" style="display: none;">Wyloguj</button>
+                <button id="upload-btn" style="display: none;">Dodaj zdjęcia</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <input type="file" id="file_input" accept="image/*,video/*" multiple>
+        <section class="gallery" id="gallery"></section>
+        
+        <div class="upload-status" id="upload-status">
+            <p>Przesyłanie plików...</p>
+            <div class="progress-bar"><div class="progress"></div></div>
+        </div>
+    </main>
+
+    <div class="modal" id="modal">
+        <span class="close">&times;</span>
+        <div class="modal-content" id="modal-content"></div>
+    </div>
+
+    <footer>
+        <a href="https://drive.google.com" class="drive-link">Otwórz galerię w Google Drive</a>
+        <div class="footer-links">
+            <a href="/privacy">Polityka prywatności</a>
+            <a href="/terms">Warunki korzystania</a>
+        </div>
+        <p>© 2025 Galeria z Piwonią</p>
+    </footer>
+</body>
+</html>
